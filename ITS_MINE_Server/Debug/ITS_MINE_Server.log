@@ -1,0 +1,12 @@
+﻿  ITS_MINE_Server.cpp
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\its_mine_server\global.h(13): warning C4091: 'typedef ': 변수를 선언하지 않으면 'Vec' 왼쪽은 무시됩니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\its_mine_server\global.h(20): warning C4091: 'typedef ': 변수를 선언하지 않으면 'CtoSPacket' 왼쪽은 무시됩니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\its_mine_server\global.h(33): warning C4091: 'typedef ': 변수를 선언하지 않으면 'StoCPacket' 왼쪽은 무시됩니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\its_mine_server\global.h(42): warning C4091: 'typedef ': 변수를 선언하지 않으면 'Player' 왼쪽은 무시됩니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\its_mine_server\global.h(51): warning C4091: 'typedef ': 변수를 선언하지 않으면 'ItemObj' 왼쪽은 무시됩니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\its_mine_server\global.h(60): warning C4091: 'typedef ': 변수를 선언하지 않으면 'Info' 왼쪽은 무시됩니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\its_mine_server\its_mine_server.cpp(123): warning C4101: 'client_sock' :참조되지 않은 지역 변수입니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\its_mine_server\its_mine_server.cpp(124): warning C4101: 'clientaddr' :참조되지 않은 지역 변수입니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\its_mine_server\its_mine_server.cpp(128): warning C4101: 'hProccessClient' :참조되지 않은 지역 변수입니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\its_mine_server\its_mine_server.cpp(125): warning C4101: 'addrlen' :참조되지 않은 지역 변수입니다.
+  ITS_MINE_Server.vcxproj -> D:\Users\kim jung hoo\Desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\ITS_MINE_Server\Debug\ITS_MINE_Server.exe

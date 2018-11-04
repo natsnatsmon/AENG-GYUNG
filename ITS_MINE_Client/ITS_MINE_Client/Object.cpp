@@ -143,7 +143,9 @@ void Object::Update(float eTime)
 	//cal Position
 	m_PosX = m_PosX + m_VelX * eTime;
 	m_PosY = m_PosY + m_VelY * eTime;
-	std::cout << m_PosX << ' ' << m_PosY << std::endl;
+
+	// 좌표 테스트용 코드
+	//std::cout << m_PosX << ' ' << m_PosY << std::endl;
 }
 
 

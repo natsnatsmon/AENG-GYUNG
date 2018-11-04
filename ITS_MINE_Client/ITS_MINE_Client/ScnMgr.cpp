@@ -1,3 +1,5 @@
+#pragma comment(lib, "ws2_32")
+#include <winsock2.h>
 #include "stdafx.h"
 #include "ScnMgr.h"
 #include <math.h>
@@ -6,10 +8,7 @@ int g_Seq = 0;
 
 ScnMgr::ScnMgr()
 {
-
-
 	m_Renderer = NULL;
-	
 
 	m_Renderer = new Renderer(900, 800);
 	if (!m_Renderer->IsInitialized())

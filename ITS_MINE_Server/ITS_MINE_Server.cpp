@@ -72,7 +72,7 @@ void SendToClient(LPVOID arg, short PlayerID)
 }
 
 // 모든 연산 및 갱신 스레드 함수
-DWORD WINAPI CalculateThread(LPVOID ard)
+DWORD WINAPI CalculateThread(LPVOID arg)
 {
 	//★ 생성 시 출력(테스트용)
 	printf("CalculateThread 생성\n");
@@ -81,11 +81,18 @@ DWORD WINAPI CalculateThread(LPVOID ard)
 }
 
 // 클라이언트로부터 데이터를 주고 받는 스레드 함수
-DWORD WINAPI ProccessClient(LPVOID ard)
+DWORD WINAPI ProccessClient(LPVOID arg)
 {
 	//★ 생성 시 출력(테스트용)
 	printf("ProccessClient 생성\n");
 
+
+	//// closesocket()	★ closesocket()하려면 우리가 정의한 데이터 송.수신 함수 인자로 arg말고 socket 넘겨주는게 나을 듯..
+	//closesocket(client_sock);
+	//info.connectedP--;
+	////★ 소멸 시 출력(테스트용)
+	//printf("[TCP 서버] 클라이언트 종료: IP 주소=%s, 포트 번호=%d\n",
+	//	inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 	return 0;
 }
 
@@ -132,27 +139,30 @@ int main(int argc, char *argv[])
 	// hCalculateThread 생성
 	hCalculateThread = CreateThread(NULL, 0, CalculateThread, NULL, 0, NULL);
 
-	while (info.connectedP < MAX_PLAYERS)		// ★ 이 조건은 다시 회의 후 결정
+	while(1)
 	{
-		// accept()
-		addrlen = sizeof(clientaddr);
-		client_sock = accept(listen_sock, (SOCKADDR *)&clientaddr, &addrlen);
-		if (client_sock == INVALID_SOCKET) {
-			err_display("accept()");
-			break;
+		while (info.connectedP < MAX_PLAYERS)		// ★ 이 조건은 다시 회의 후 결정
+		{
+			// accept()
+			addrlen = sizeof(clientaddr);
+			client_sock = accept(listen_sock, (SOCKADDR *)&clientaddr, &addrlen);
+			if (client_sock == INVALID_SOCKET) {
+				err_display("accept()");
+				break;
+			}
+	
+			// hProccessClient 생성
+			hProccessClient[info.connectedP] = CreateThread(NULL, 0, ProccessClient, (LPVOID)client_sock, 0, NULL);
+			if (hProccessClient[info.connectedP] == NULL) { closesocket(client_sock); }
+			else { CloseHandle(hProccessClient[info.connectedP]); }		//★ 스레드 핸들값을 바로 삭제할지도 논의 필요
+	
+			// 접속자 수 증가
+			info.connectedP++;
+
+			//★ 접속한 클라이언트 정보 출력(테스트용)
+			printf("\n[TCP 서버] 클라이언트 %d 접속: IP 주소=%s, 포트 번호=%d\n",
+				info.connectedP, inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 		}
-
-		//★ 접속한 클라이언트 정보 출력(테스트용)
-		printf("\n[TCP 서버] 클라이언트 접속: IP 주소=%s, 포트 번호=%d\n",
-			inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
-
-		// hProccessClient 생성
-		hProccessClient[info.connectedP] = CreateThread(NULL, 0, ProccessClient, (LPVOID)client_sock, 0, NULL);
-		if (hProccessClient[info.connectedP] == NULL) { closesocket(client_sock); }
-		else { CloseHandle(hProccessClient[info.connectedP]); }		//★ 스레드 핸들값을 바로 삭제할지도 논의 필요
-
-		// 접속자 수 증가
-		info.connectedP++;
 	}
 
 	// closesocket()

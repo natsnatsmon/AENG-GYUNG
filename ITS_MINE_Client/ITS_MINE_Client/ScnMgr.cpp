@@ -17,7 +17,13 @@ ScnMgr::ScnMgr()
 	}
 
 	m_TestTexture = m_Renderer->CreatePngTexture("./textures/texture.png");
-	m_TexSeq = m_Renderer->CreatePngTexture("./textures/character.png");
+	m_TexSeq = m_Renderer->CreatePngTexture("./textures/p1_sprite.png");
+
+	m_testFloorTex = m_Renderer->CreatePngTexture("./textures/AG_testUI.png");
+	m_lifeTex = m_Renderer->CreatePngTexture("./textures/life.png");
+	m_bulletTex = m_Renderer->CreatePngTexture("./textures/bullet_p1.png");
+	m_itemTex = m_Renderer->CreatePngTexture("./textures/item.png");
+
 	for (int i = 0; i < MAX_OBJECTS; i++)
 	{
 		m_Objects[i] = NULL;
@@ -53,6 +59,20 @@ void ScnMgr::RenderScene()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
+	// 리소스 테스트용으로 만들었는데 좌표 맞춘거니까 지우지 마세영!
+	// 바닥
+	m_Renderer->DrawTextureRect(0, 0, 0, 900, 800, 1, 1, 1, 1, m_testFloorTex);
+	
+	// 아이템
+	m_Renderer->DrawTextureRectSeqXY(250, 250, 0, 40, 40, 1, 1, 1, 1, m_itemTex,1,1,1,1);
+
+	// 총알
+	m_Renderer->DrawTextureRectSeqXY(100, 100, 0, 40, 40, 1, 1, 1, 1, m_bulletTex,1,1,1,1);
+
+	// 생명
+	m_Renderer->DrawTextureRectSeqXY(390, -330, 0, 40, 40, 1, 1, 1, 1, m_lifeTex, 1, 1, 1, 1);
+
+
 	for (int i = 0; i < MAX_OBJECTS; i++)
 	{
 		if (m_Objects[i] != NULL)
@@ -68,11 +88,11 @@ void ScnMgr::RenderScene()
 
 
 			int seqX, seqY;
-			seqX = g_Seq % 8;
-			seqY = (int)(g_Seq / 8);
+			seqX = g_Seq % 4;
+			seqY = 1;
 
 			g_Seq++;
-			if (g_Seq > 16)
+			if (g_Seq > 5)
 				g_Seq = 0;
 
 
@@ -80,11 +100,11 @@ void ScnMgr::RenderScene()
 			//m_Renderer->DrawSolidRect(x * 2.f, y * 2.f, 0, sizeX,sizeY, 1, 0, 1, 1);//미터로 바꾸기 위해서 x,y 에 100 씩 곱한다.
 			//m_Renderer->DrawTextureRect(x * 2.f, y * 2.f, 0, sizeX, sizeY, 1, 1, 1, 1, m_TestTexture);
 			//m_Renderer->DrawTextureRectHeight(newX, newY, 1.f, sizeX, sizeY, 1, 1, 1, 1, m_TestTexture, newZ);
-			m_Renderer->DrawTextureRectSeqXY(newX, newY, 1.f, sizeX, sizeY, 1, 1, 1, 1, m_TexSeq, seqX, seqY, 8, 2);
+			
+			// 플레이어
+			m_Renderer->DrawTextureRectSeqXY(newX, newY, 1.f, sizeX, sizeY, 1, 1, 1, 1, m_TexSeq, seqX, seqY, 4, 1);
 		}
 	}
-	
-
 }
 
 void ScnMgr::Update(float eTime)

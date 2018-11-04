@@ -25,5 +25,17 @@ private:
 	GLuint m_TestTexture = 0;
 	GLuint m_TexSeq = 0;
 
+	GLuint m_testFloorTex = 0;
+	GLuint m_lifeTex = 0;
+	GLuint m_bulletTex = 0;
+	GLuint m_itemTex = 0;
+
+
+	// 플레이어는 지금 사용 안하고있습니당
+	GLuint m_player1Tex = 0;
+	GLuint m_player2Tex = 0;
+	GLuint m_player3Tex = 0;
+	GLuint m_player4Tex = 0;
+
 };
 

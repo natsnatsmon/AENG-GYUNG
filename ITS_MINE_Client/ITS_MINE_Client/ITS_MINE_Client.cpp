@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 	// Initialize GL things
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowPosition(0, 0);
+	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(900, 800);
 	glutCreateWindow("Game Software Engineering KPU");
 
@@ -224,12 +224,12 @@ int main(int argc, char **argv)
 	if (sock == INVALID_SOCKET) err_quit("socket()");
 
 	// connect()
-	ZeroMemory(&serveraddr, sizeof(serveraddr));
-	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
-	serveraddr.sin_port = htons(SERVERPORT);
-	retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
-	if (retval == SOCKET_ERROR) err_quit("connect()");
+	//ZeroMemory(&serveraddr, sizeof(serveraddr));
+	//serveraddr.sin_family = AF_INET;
+	//serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
+	//serveraddr.sin_port = htons(SERVERPORT);
+	//retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
+	//if (retval == SOCKET_ERROR) err_quit("connect()");
 
 	g_ScnMgr = new ScnMgr();
 

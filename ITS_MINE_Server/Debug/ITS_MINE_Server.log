@@ -1,10 +1,3 @@
 ﻿  ITS_MINE_Server.cpp
-d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_server\global.h(13): warning C4091: 'typedef ': 변수를 선언하지 않으면 'Vec' 왼쪽은 무시됩니다.
-d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_server\global.h(20): warning C4091: 'typedef ': 변수를 선언하지 않으면 'CtoSPacket' 왼쪽은 무시됩니다.
-d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_server\global.h(33): warning C4091: 'typedef ': 변수를 선언하지 않으면 'StoCPacket' 왼쪽은 무시됩니다.
-d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_server\global.h(42): warning C4091: 'typedef ': 변수를 선언하지 않으면 'Player' 왼쪽은 무시됩니다.
-d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_server\global.h(51): warning C4091: 'typedef ': 변수를 선언하지 않으면 'ItemObj' 왼쪽은 무시됩니다.
-d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_server\global.h(60): warning C4091: 'typedef ': 변수를 선언하지 않으면 'Info' 왼쪽은 무시됩니다.
-d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_server\its_mine_server.cpp(178): warning C4996: 'inet_ntoa': Use inet_ntop() or InetNtop() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
-  c:\program files (x86)\windows kits\10\include\10.0.17134.0\um\winsock2.h(1848): note: 'inet_ntoa' 선언을 참조하십시오.
-  ITS_MINE_Server.vcxproj -> D:\Users\kim jung hoo\Desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\AENG-GYUNG\ITS_MINE_Server\Debug\ITS_MINE_Server.exe
+c:\users\ha6q6\desktop\project\3학년\12_넷겜플\aeng-gyung\its_mine_server\global.h(33): warning C4091: 'typedef ': 변수를 선언하지 않으면 'Vec' 왼쪽은 무시됩니다.
+  ITS_MINE_Server.vcxproj -> C:\Users\ha6q6\Desktop\Project\3학년\12_넷겜플\AENG-GYUNG\ITS_MINE_Server\Debug\ITS_MINE_Server.exe

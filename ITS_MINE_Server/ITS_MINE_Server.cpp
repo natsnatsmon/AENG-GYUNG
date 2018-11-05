@@ -1,8 +1,11 @@
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #pragma comment(lib, "ws2_32")
+#pragma pack(1)
 #include <winsock2.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "Global.h"
+#include <iostream>
 
 // 동기화를 위한 이벤트 객체 
 HANDLE hRecvEvt;		// 클라이언트로부터 데이터 수신 이벤트 객체
@@ -38,6 +41,65 @@ void err_display(const char *msg)
 	LocalFree(lpMsgBuf);
 }
 
+// 플레이어, 아이템 구조체
+Player *players[MAX_PLAYERS];
+ItemObj *item[MAX_ITEMS];
+CtoSPacket *cTsPacket = new CtoSPacket;
+StoCPacket *sTcPacket = new StoCPacket;
+void Init() {
+
+	// 플레이어 구조체 초기화
+	for (int i = 0; i < MAX_PLAYERS; ++i) {
+		players[i] = new Player;
+		players[i]->gameState = MainState;
+		players[i]->pos.x = INIT_POS;
+		players[i]->pos.y = INIT_POS;
+		players[i]->life = INIT_LIFE;
+		for (int j = 0; j < 4; ++j)
+			players[i]->keyDown[j] = false;
+	}
+
+	// 아이템 구조체 초기화
+	for (int i = 0; i < MAX_ITEMS; ++i) {
+		item[i] = new ItemObj;
+		// 아이템의 좌표를 40 ~ 760 사이로 랜덤하게 놓기
+		item[i]->pos.x = (float)(rand() % 720 + (R_ITEM * 2));
+		item[i]->pos.y = (float)(rand() % 720 + (R_ITEM * 2));
+		item[i]->direction.x = 0;
+		item[i]->direction.y = 0;
+		item[i]->velocity = 0.f;
+		item[i]->playerID = nullPlayer;
+		item[i]->isVisible = false;
+	}
+
+	// 게임 정보 구조체 초기화
+	info.connectedP = 0;
+	info.gameTime = 0;
+	for (int i = 0; i < MAX_PLAYERS; ++i)
+		info.p[i] = players[i];
+	for (int i = 0; i < MAX_ITEMS; ++i)
+		info.i[i] = item[i];
+
+	// C -> S Packet 구조체 초기화
+	cTsPacket->pos.x = INIT_POS;
+	cTsPacket->pos.y = INIT_POS;
+	for (int i = 0; i < 4; ++i)
+		cTsPacket->keyDown[i] = false;
+	cTsPacket->life = INIT_LIFE;
+
+
+	// S -> C Packet 구조체 초기화
+	sTcPacket->p1Pos.x = INIT_POS;
+	sTcPacket->p1Pos.y = INIT_POS;
+	sTcPacket->p2Pos.x = INIT_POS;
+	sTcPacket->p2Pos.y = INIT_POS;
+	// 아이템은 아직 초기화 안함
+	sTcPacket->time = 0;
+	sTcPacket->life = INIT_LIFE;
+	sTcPacket->gameState = MainState;
+
+}
+
 //★ 사용자 정의 데이터 수신 함수(고정길이 만큼 반복 수신)
 int recvn(SOCKET s, char *buf, int len, int flags)
 {
@@ -60,31 +122,91 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 // 사용자 정의 데이터 수신 함수(클라이언트로부터 입력받은 데이터 수신)
 //★ recvn과 합칠 수 있는지 논의 해보기
-void RecvFromClient(LPVOID arg, short PlayerID)
+void RecvFromClient(SOCKET client_sock, short PlayerID)
 {
+	int retVal;
+
+	SOCKADDR_IN clientAddr;
+	int addrLen;
+
+
+	// 클라이언트 정보 받기
+	addrLen = sizeof(clientAddr);
+	getpeername(client_sock, (SOCKADDR *)&clientAddr, &addrLen);
+
+	char buf[SIZE_CToSPACKET + 1];
+
+	// 클라이언트와 데이터 통신
+	while (1) {
+
+		ZeroMemory(buf, BUFSIZE);
+
+		// 데이터 받기
+		retVal = recvn(client_sock, buf, SIZE_CToSPACKET, 0);
+		if (retVal == SOCKET_ERROR) {
+			err_display("recv()");
+			break;
+		}
+
+		else if (retVal == 0) { break; }
+
+
+		// 받은 데이터 출력
+		buf[retVal] = '\0';
+		cTsPacket = (CtoSPacket*)buf;
+
+		printf("\n[TCP 서버] 클라이언트 %d 접속: IP 주소=%s, 포트 번호=%d\n",
+			info.connectedP, inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
+
+	}
 
 }
 
 // 사용자 정의 데이터 송신 함수(클라이언트에게 갱신된 데이터 송신)
 void SendToClient(LPVOID arg, short PlayerID)
 {
-
 }
 
-// 모든 연산 및 갱신 스레드 함수
-DWORD WINAPI CalculateThread(LPVOID arg)
-{
-	//★ 생성 시 출력(테스트용)
-	printf("CalculateThread 생성\n");
 
-	return 0;
-}
-
+short clientID = 0;
 // 클라이언트로부터 데이터를 주고 받는 스레드 함수
 DWORD WINAPI ProccessClient(LPVOID arg)
 {
 	//★ 생성 시 출력(테스트용)
 	printf("ProccessClient 생성\n");
+	
+	// 클라한테 데이터 받기
+	SOCKET client_sock = (SOCKET)arg;
+	const short currentThreadNum = clientID++;
+
+	RecvFromClient(client_sock, clientID);
+
+	switch (players[clientID]->gameState) {
+	case MainState:
+		break;
+
+	case LobbyState:
+		break;
+
+	case GamePlayState:
+		break;
+
+	case GameOverState:
+		break;
+
+	default:
+		printf("state 오류!\n");
+		return 1;
+	}
+
+
+	// 계산해줘 ~~~~~ 이벤트 켜기
+	// CalculateThread에서 계산하도록 넘겨주기
+
+	// 받는 이벤트 기다린다.....
+
+	// 클라한테 데이터 보내기
+
 
 
 	//// closesocket()	★ closesocket()하려면 우리가 정의한 데이터 송.수신 함수 인자로 arg말고 socket 넘겨주는게 나을 듯..
@@ -93,6 +215,15 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 	////★ 소멸 시 출력(테스트용)
 	//printf("[TCP 서버] 클라이언트 종료: IP 주소=%s, 포트 번호=%d\n",
 	//	inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
+	return 0;
+}
+
+// 모든 연산 및 갱신 스레드 함수
+DWORD WINAPI CalculateThread(LPVOID arg)
+{
+	//★ 생성 시 출력(테스트용)
+	printf("CalculateThread 생성\n");
+
 	return 0;
 }
 
@@ -122,22 +253,27 @@ int main(int argc, char *argv[])
 	retval = listen(listen_sock, SOMAXCONN);
 	if (retval == SOCKET_ERROR) err_quit("listen()");
 
-	// 두 개의 자동 리셋 이벤트 객체 생성(데이터 수신 이벤트, 갱신 이벤트)
-	hRecvEvt = CreateEvent(NULL, FALSE, FALSE, NULL);	// 비신호 상태
-	if (hRecvEvt == NULL) return 1;
-	hUpdateEvt = CreateEvent(NULL, FALSE, TRUE, NULL);	// 신호 상태
-	if (hUpdateEvt == NULL) return 1;
 
 	// 데이터 통신에 사용할 변수
 	SOCKET client_sock;
 	SOCKADDR_IN clientaddr;
 	int addrlen;
 
-	HANDLE hCalculateThread;	// 연산 스레드 핸들
 	HANDLE hProccessClient[2];	// 클라이언트 처리 스레드 핸들
+	HANDLE hCalculateThread;	// 연산 스레드 핸들
+	hCalculateThread = CreateThread(NULL, 0, CalculateThread, NULL, 0, NULL); // hCalculateThread 생성
 
-	// hCalculateThread 생성
-	hCalculateThread = CreateThread(NULL, 0, CalculateThread, NULL, 0, NULL);
+	// 두 개의 자동 리셋 이벤트 객체 생성(데이터 수신 이벤트, 갱신 이벤트)
+	hRecvEvt = CreateEvent(NULL, FALSE, FALSE, NULL);	// 비신호 상태
+	if (hRecvEvt == NULL) return 1;
+	hUpdateEvt = CreateEvent(NULL, FALSE, TRUE, NULL);	// 신호 상태
+	if (hUpdateEvt == NULL) return 1;
+	
+	Init();
+
+	// 테스트트트트트트트
+	printf("cTsPacket.life : %d\n", cTsPacket->life);
+	printf("패킷 사이즈 : %d\n", sizeof(StoCPacket));
 
 	while(1)
 	{

@@ -234,7 +234,7 @@ void SendToServer(SOCKET s) {
 	cout << "SendToServer() 호출\n";
 
 	int retVal;
-	// 데이터 통신에 사용할 변수
+	// ★ 테스트용 데이터 통신에 사용할 변수
 	char buf[40];
 	const char *testData[] = {
 		"안뇽안뇽안뇽",
@@ -247,11 +247,10 @@ void SendToServer(SOCKET s) {
 	// 서버와 데이터 통신
 	for (int i = 0; i < 4; ++i) {
 		// 데이터 입력 (시뮬레이션)
-		memset(buf, 'a', sizeof(buf));
-		cout << buf << endl;
-		strncpy_s(buf, testData[i], strlen(testData[i]));
+		memset(buf, '#', sizeof(buf));
+		strncpy(buf, testData[i], strlen(testData[i]));
 
-		cout << testData[i] << endl;
+		cout << buf << endl;
 
 		// 데이터 보내기
 		retVal = send(sock, buf, 40, 0);

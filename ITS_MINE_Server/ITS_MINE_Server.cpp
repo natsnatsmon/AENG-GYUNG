@@ -186,12 +186,12 @@ void RecvFromClient(SOCKET client_sock, short PlayerID)
 	//}
 
 
-	// 테스트 수신
-	char buf[50];
+	// ★ 테스트용 데이터 통신에 사용할 변수
+	char buf[40+1];
 
 	while (1) {
 		// 데이터 받기
-		retVal = recvn(sock, buf, 50, 0);
+		retVal = recvn(sock, buf, 40, 0);
 		if (retVal == SOCKET_ERROR) {
 			err_display("recv()");
 			break;
@@ -225,8 +225,6 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 
 	// 클라한테 데이터 받기
 	SOCKET client_sock = (SOCKET)arg;
-
-	const short currentThreadNum = playerID++;
 
 	RecvFromClient(client_sock, playerID);
 
@@ -264,7 +262,7 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 	// closesocket()	★ closesocket()하려면 우리가 정의한 데이터 송.수신 함수 인자로 arg말고 socket 넘겨주는게 나을 듯..
 	closesocket(client_sock);
 	//★ 소멸 시 출력(테스트용)
-	printf("[TCP 서버] 클라이언트 %d 종료\n", info.connectedP);
+	printf("[TCP 서버] 클라이언트 %d 종료\n", playerID);
 	// 접속자 수 감소
 	info.connectedP--;
 	return 0;

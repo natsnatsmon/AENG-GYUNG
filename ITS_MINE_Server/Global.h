@@ -13,9 +13,8 @@
 #define INIT_POS -100.f
 #define INIT_LIFE 5
 
-#define SIZE_CToSPACKET 14
-#define SIZE_StoCPACKET 824
-
+//#define SIZE_CToSPACKET 14
+//#define SIZE_StoCPACKET 1124
 
 //★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
 enum gameState {
@@ -28,17 +27,20 @@ enum player {
 };
 
 // 좌표를 위한 벡터 구조체 
-typedef struct Vec {
+struct Vec {
 	float x; float y;
 };
 
 // Client -> Server
+#pragma pack(1)
 struct CtoSPacket {
 	Vec pos;
 	bool keyDown[4];
 	short life;
 };
+#pragma pack()
 
+#pragma pack(1)
 // Server -> Client
 struct StoCPacket {
 	Vec p1Pos;
@@ -52,11 +54,11 @@ struct StoCPacket {
 
 	short life;
 	short gameState;
-
 };
+#pragma pack()
 
 // 플레이어 구조체
-struct Player {
+struct SPlayer {
 	short gameState; 	// 게임 상태를 나타내는 변수
 
 	Vec pos;			// 플레이어 위치
@@ -65,7 +67,7 @@ struct Player {
 };
 
 // 아이템 구조체
-struct ItemObj {
+struct SItemObj {
 	Vec pos;			// 아이템 위치
 	Vec direction;		// 아이템 발사 방향
 	float velocity;		// 아이템 속도
@@ -78,6 +80,6 @@ struct Info {
 	short connectedP;		// 연결된 플레이어의 수
 	DWORD gameTime;			// 게임 시간
 
-	Player *p[MAX_PLAYERS];	// 플레이어 구조체
-	ItemObj *i[MAX_ITEMS];	// 아이템 구조체
+	SPlayer *p[MAX_PLAYERS];	// 플레이어 구조체
+	SItemObj *i[MAX_ITEMS];	// 아이템 구조체
 };

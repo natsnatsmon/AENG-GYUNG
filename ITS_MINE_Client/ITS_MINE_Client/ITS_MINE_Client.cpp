@@ -235,7 +235,7 @@ void SendToServer(SOCKET s) {
 
 	int retVal;
 	// 데이터 통신에 사용할 변수
-	char buf[50];
+	char buf[40];
 	const char *testData[] = {
 		"안뇽안뇽안뇽",
 		"Nice to meet you!",
@@ -247,9 +247,11 @@ void SendToServer(SOCKET s) {
 	// 서버와 데이터 통신
 	for (int i = 0; i < 4; ++i) {
 		// 데이터 입력 (시뮬레이션)
-		memset(buf, '*', sizeof(buf));
+		memset(buf, 'a', sizeof(buf));
+		cout << buf << endl;
 		strncpy_s(buf, testData[i], strlen(testData[i]));
 
+		cout << testData[i] << endl;
 
 		// 데이터 보내기
 		retVal = send(sock, buf, 40, 0);
@@ -261,6 +263,8 @@ void SendToServer(SOCKET s) {
 
 		std::cout << "[TCP 클라이언트] " << retVal << "바이트를 보냈습니다. \n";
 	}
+
+	//int retval = 0;
 
 	//for (int i = 0; i < 4; i++)
 	//	cTsPacket->keyDown[i] = 0;
@@ -276,7 +280,7 @@ void SendToServer(SOCKET s) {
 	//	exit(1);
 	//}
 
-	cout << "다보냄!!!" << endl;
+	//cout << "다보냄!!!" << endl;
 }
 
 int main(int argc, char **argv)

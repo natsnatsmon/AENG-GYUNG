@@ -3,7 +3,8 @@
 
 #include <Windows.h>
 //#define SERVERIP   "127.0.0.1"
-#define SERVERIP   "59.16.87.178"
+#define SERVERIP   "59.16.87.178"      // 김정현 서버 시
+//#define SERVERIP   "182.210.213.139"      // 박하연 서버 시
 #define SERVERPORT 8888
 
 #define HERO_ID	0 

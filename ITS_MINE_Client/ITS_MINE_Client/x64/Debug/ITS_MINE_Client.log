@@ -1,3 +1,26 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(391,5): warning MSB8028: 중간 디렉터리(x64\Debug\)에 다른 프로젝트(SimpleGame.vcxproj)에서 공유하는 파일이 포함되어 있습니다.  이로 인해 잘못된 정리 및 다시 빌드 동작이 수행될 수 있습니다.
+  stdafx.cpp
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\global.h(45): warning C4091: 'typedef ': 변수를 선언하지 않으면 'Vec' 왼쪽은 무시됩니다.
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\global.h(54): warning C4091: 'typedef ': 변수를 선언하지 않으면 'CtoSPacket' 왼쪽은 무시됩니다.
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\global.h(68): warning C4091: 'typedef ': 변수를 선언하지 않으면 'StoCPacket' 왼쪽은 무시됩니다.
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\global.h(75): warning C4091: 'typedef ': 변수를 선언하지 않으면 'ItemObj' 왼쪽은 무시됩니다.
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\global.h(84): warning C4091: 'typedef ': 변수를 선언하지 않으면 'Info' 왼쪽은 무시됩니다.
+  ITS_MINE_Client.cpp
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\its_mine_client.cpp(136): warning C4101: 'retval' :참조되지 않은 지역 변수입니다.
+  LoadPng.cpp
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\loadpng.cpp(800): warning C4334: '<<': 32비트 시프트의 결과가 암시적으로 64비트로 변환됩니다. 64비트 시프트를 사용하시겠습니까?
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\loadpng.cpp(1462): warning C4267: '=': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\loadpng.cpp(1466): warning C4267: '=': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\loadpng.cpp(1538): warning C4267: '=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\loadpng.cpp(3483): warning C4334: '<<': 32비트 시프트의 결과가 암시적으로 64비트로 변환됩니다. 64비트 시프트를 사용하시겠습니까?
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\loadpng.cpp(3497): warning C4267: '인수': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\loadpng.cpp(4338): warning C4267: '=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\loadpng.cpp(4386): warning C4267: '=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\loadpng.cpp(4466): warning C4267: '=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\loadpng.cpp(5409): warning C4267: '초기화 중': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  Object.cpp
+  Renderer.cpp
+c:\users\jongwoncha\desktop\its_mine_client\its_mine_client\renderer.cpp(125): warning C4267: '=': 'size_t'에서 'GLint'(으)로 변환하면서 데이터가 손실될 수 있습니다.
   ScnMgr.cpp
-  ITS_MINE_Client.vcxproj -> C:\Users\ha6q6\Desktop\Project\3학년\12_넷겜플\AENG-GYUNG\ITS_MINE_Client\x64\Debug\ITS_MINE_Client.exe
+  코드를 생성하고 있습니다...
+  ITS_MINE_Client.vcxproj -> C:\Users\JongWonCha\Desktop\ITS_MINE_Client\x64\Debug\ITS_MINE_Client.exe

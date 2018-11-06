@@ -23,22 +23,86 @@ but WITHOUT ANY WARRANTY.
 #define FORCE 1000.f
 using namespace std;
 
-// ★ 이 변수들 ScnMgr.cpp에서도 사용해야 함(논의 필요)
 // 윈속 초기화에 쓰일 변수
 WSADATA wsa;
+
 // socket()
 SOCKET sock;
+
 // connect()
 SOCKADDR_IN serveraddr;
 
 ScnMgr *g_ScnMgr = NULL;
 DWORD g_PrevTime = 0;
-BOOL g_KeyW = FALSE;
-BOOL g_KeyA = FALSE;
-BOOL g_KeyD = FALSE;
-BOOL g_KeyS = FALSE;
 
 int g_Shoot = SHOOT_NONE;
+
+// 구조체들 선언
+Info info;
+ItemObj *item[MAX_ITEMS];
+
+CtoSPacket *cTsPacket = new CtoSPacket;
+StoCPacket *sTcPacket = new StoCPacket;
+
+void Init() {
+
+	// 아이템 구조체 초기화
+	for (int i = 0; i < MAX_ITEMS; ++i) {
+		item[i] = new ItemObj;
+		item[i]->pos.x = 0;
+		item[i]->pos.y = 0;
+		item[i]->playerID = nullPlayer;
+		item[i]->isVisible = false;
+	}
+
+	// C -> S Packet 구조체 초기화
+	cTsPacket->pos.x = INIT_POS;
+	cTsPacket->pos.y = INIT_POS;
+	for (int i = 0; i < 4; ++i)
+		cTsPacket->keyDown[i] = false;
+	cTsPacket->life = INIT_LIFE;
+
+
+	// S -> C Packet 구조체 초기화
+	sTcPacket->p1Pos.x = INIT_POS;
+	sTcPacket->p1Pos.y = INIT_POS;
+	sTcPacket->p2Pos.x = INIT_POS;
+	sTcPacket->p2Pos.y = INIT_POS;
+	// 아이템은 아직 초기화 안함
+	sTcPacket->time = 0;
+	sTcPacket->life = INIT_LIFE;
+	sTcPacket->gameState = MainState;
+
+
+
+	// 게임 정보 구조체 초기화
+	info.gameTime = 0;
+	for (int i = 0; i < MAX_PLAYERS; ++i)
+		info.player[i] = { 0, };
+	for (int i = 0; i < MAX_ITEMS; ++i)
+		info.item[i] = { {0, 0}, 0, nullPlayer };
+
+}
+
+
+int recvn(SOCKET s, char *buf, int len, int flags)
+{
+	int received;
+	char *ptr = buf;
+	int left = len;
+	while (left > 0)
+	{
+		received = recv(s, ptr, left, flags);
+		if (received == SOCKET_ERROR)
+			return SOCKET_ERROR;
+		else if (received == 0)
+			break;
+		left -= received;
+		ptr += received;
+	}
+	return (len - left);
+}
+
 
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char *msg)
@@ -69,6 +133,7 @@ void err_display(const char *msg)
 
 void RenderScene(void)
 {
+	int retval;
 	if (g_PrevTime == 0)
 	{
 		g_PrevTime = GetTickCount();
@@ -79,31 +144,14 @@ void RenderScene(void)
 	g_PrevTime = CurrTime;
 	float eTime = (float)ElapsedTime / 1000.0f;
 
-	float forceX = 0.f;
-	float forceY = 0.f;
-	if (g_KeyW)
+	/*retval = send(sock, (char*)cTsPacket, sizeof(cTsPacket), 0);
+	if (retval == SOCKET_ERROR)
 	{
-		forceY += FORCE;
-	}
-	if (g_KeyS)
-	{
-		forceY -= FORCE;
-	}
-	if (g_KeyA)
-	{
-		forceX -= FORCE;
-	}
-	if (g_KeyD)
-	{
-		forceX += FORCE;
-	}
-	g_ScnMgr->ApplyForce(forceX, forceY, eTime);
-
-	g_ScnMgr->Update(eTime);
+		err_display("send()");
+		exit(1);
+	}*/
 
 	g_ScnMgr->RenderScene();
-
-	g_ScnMgr->Shoot(g_Shoot);
 
 	glutSwapBuffers();
 }
@@ -123,38 +171,38 @@ void KeyDownInput(unsigned char key, int x, int y)
 {
 	if (key == 'w')
 	{
-		g_KeyW = TRUE;
+		cTsPacket->keyDown[1] = TRUE;
 	}
 	else if (key == 's')
 	{
-		g_KeyS = TRUE;
+		cTsPacket->keyDown[3] = TRUE;
 	}
 	else if (key == 'a')
 	{
-		g_KeyA = TRUE;
+		cTsPacket->keyDown[0] = TRUE;
 	}
 	else if (key == 'd')
 	{
-		g_KeyD = TRUE;
+		cTsPacket->keyDown[2] = TRUE;
 	}
 }
 void KeyUpInput(unsigned char key, int x, int y)
 {
 	if (key == 'w')
 	{
-		g_KeyW = FALSE;
+		cTsPacket->keyDown[0] = TRUE;
 	}
 	else if (key == 's')
 	{
-		g_KeyS = FALSE;
+		cTsPacket->keyDown[3] = TRUE;
 	}
 	else if (key == 'a')
 	{
-		g_KeyA = FALSE;
+		cTsPacket->keyDown[1] = TRUE;
 	}
 	else if (key == 'd')
 	{
-		g_KeyD = FALSE;
+		cTsPacket->keyDown[2] = TRUE;
 	}
 }
 void SpecialKeyInput(int key, int x, int y)
@@ -181,6 +229,16 @@ void SpecialKeyUpInput(int key, int x, int y)
 	g_Shoot = SHOOT_NONE;
 }
 
+void SendToServer(SOCKET s) {
+	int retval = 0;
+
+	retval = send(sock, (char*)cTsPacket, sizeof(CtoSPacket), 0);
+	if (retval == SOCKET_ERROR)
+	{
+		err_display("send()");
+		exit(1);
+	}
+}
 
 int main(int argc, char **argv)
 {
@@ -189,7 +247,7 @@ int main(int argc, char **argv)
 	// Initialize GL things
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowPosition(100, 100);
+	glutInitWindowPosition(0, 0);
 	glutInitWindowSize(900, 800);
 	glutCreateWindow("Game Software Engineering KPU");
 
@@ -211,7 +269,6 @@ int main(int argc, char **argv)
 	glutSpecialFunc(SpecialKeyInput);
 	glutSpecialUpFunc(SpecialKeyUpInput);
 
-	int a = GLUT_KEY_UP;
 
 	glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
 
@@ -224,17 +281,21 @@ int main(int argc, char **argv)
 	if (sock == INVALID_SOCKET) err_quit("socket()");
 
 	// connect()
-	//ZeroMemory(&serveraddr, sizeof(serveraddr));
-	//serveraddr.sin_family = AF_INET;
-	//serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
-	//serveraddr.sin_port = htons(SERVERPORT);
-	//retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
-	//if (retval == SOCKET_ERROR) err_quit("connect()");
+	ZeroMemory(&serveraddr, sizeof(serveraddr));
+	serveraddr.sin_family = AF_INET;
+	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
+	serveraddr.sin_port = htons(SERVERPORT);
+	retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
+	if (retval == SOCKET_ERROR) err_quit("connect()");
 
 	g_ScnMgr = new ScnMgr();
+	for (int i = 0; i < 4; i++)
+		cTsPacket->keyDown[i] = 0;
+	cTsPacket->life = 5;
+	cTsPacket->pos = { 50, 50 };
+	SendToServer(sock);
 
 	glutMainLoop();		//메인 루프 함수
-
 	delete g_ScnMgr;
 
 	// closesocket()

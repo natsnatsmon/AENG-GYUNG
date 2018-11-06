@@ -45,6 +45,9 @@ struct StoCPacket {
 	Vec p2Pos;
 
 	Vec itemPos[MAX_ITEMS]; // ★ 논의 필요
+	short characterID[100];
+	bool isVisible[100];
+
 	DWORD time;
 
 	short life;

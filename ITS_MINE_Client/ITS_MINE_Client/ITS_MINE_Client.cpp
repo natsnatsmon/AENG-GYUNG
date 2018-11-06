@@ -8,6 +8,7 @@ This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY.
 */
 //#pragma comment(lib,"winmm.lib")
+#define _CRT_SECURE_NO_WARNINGS
 #pragma comment(lib, "ws2_32")
 #include <winsock2.h>
 #include "stdafx.h"
@@ -230,14 +231,52 @@ void SpecialKeyUpInput(int key, int x, int y)
 }
 
 void SendToServer(SOCKET s) {
-	int retval = 0;
+	cout << "SendToServer() 호출\n";
 
-	retval = send(sock, (char*)cTsPacket, sizeof(CtoSPacket), 0);
-	if (retval == SOCKET_ERROR)
-	{
-		err_display("send()");
-		exit(1);
+	int retVal;
+	// 데이터 통신에 사용할 변수
+	char buf[50];
+	const char *testData[] = {
+		"안뇽안뇽안뇽",
+		"Nice to meet you!",
+		"저 영어 못하는데요",
+		"Sorry"
+	};
+
+
+	// 서버와 데이터 통신
+	for (int i = 0; i < 4; ++i) {
+		// 데이터 입력 (시뮬레이션)
+		memset(buf, '*', sizeof(buf));
+		strncpy_s(buf, testData[i], strlen(testData[i]));
+
+
+		// 데이터 보내기
+		retVal = send(sock, buf, 40, 0);
+		if (retVal == SOCKET_ERROR) {
+			err_display("send()");
+			break;
+		}
+
+
+		std::cout << "[TCP 클라이언트] " << retVal << "바이트를 보냈습니다. \n";
 	}
+
+	//for (int i = 0; i < 4; i++)
+	//	cTsPacket->keyDown[i] = 0;
+	//cTsPacket->life = 1107;
+	//cTsPacket->pos = { 50, 50 };
+
+	//cout << cTsPacket->life << endl;
+
+	//retval = send(sock, (char*)&cTsPacket, sizeof(CtoSPacket), 0);
+	//if (retval == SOCKET_ERROR)
+	//{
+	//	err_display("send()");
+	//	exit(1);
+	//}
+
+	cout << "다보냄!!!" << endl;
 }
 
 int main(int argc, char **argv)
@@ -288,7 +327,10 @@ int main(int argc, char **argv)
 	retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
 	if (retval == SOCKET_ERROR) err_quit("connect()");
 
+	cout << "connect() 완료!\n";
+
 	g_ScnMgr = new ScnMgr();
+
 	for (int i = 0; i < 4; i++)
 		cTsPacket->keyDown[i] = 0;
 	cTsPacket->life = 5;

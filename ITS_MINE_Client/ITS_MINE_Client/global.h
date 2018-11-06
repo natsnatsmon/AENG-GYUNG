@@ -1,4 +1,6 @@
 #pragma once
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <Windows.h>
 //#define SERVERIP   "127.0.0.1"
 #define SERVERIP   "59.16.87.178"
@@ -46,7 +48,7 @@ typedef struct Vec
 
 
 // Client -> Server
-typedef struct CtoSPacket
+struct CtoSPacket
 {   
 	Vec pos;     
 	bool keyDown[4] = { 0, 0, 0, 0 };//스레드 동기화 왼쪽부터 시계방향
@@ -54,7 +56,7 @@ typedef struct CtoSPacket
 }; 
 
 // Server -> Client 
-typedef struct StoCPacket 
+struct StoCPacket 
 {  
 	DWORD time;
 	Vec p1Pos = { 0, 0 };
@@ -67,14 +69,14 @@ typedef struct StoCPacket
 	short gameState;
 };
 
-typedef struct ItemObj {
+struct ItemObj {
 	Vec pos;   // 아이템 위치 
 	bool isVisible;  // 화면 표시 여부
 
 	short playerID;
 };
 
-typedef struct Info {
+struct Info {
 	short gameState;  // 게임 상태를 나타내는 변수 
 	DWORD gameTime;  // 게임 시간 
 

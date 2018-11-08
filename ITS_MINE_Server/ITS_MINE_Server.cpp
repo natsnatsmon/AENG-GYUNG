@@ -42,6 +42,8 @@ void err_display(const char *msg)
 }
 
 // 플레이어, 아이템 구조체
+//SPlayer *players[MAX_PLAYERS];
+//SItemObj *item[MAX_ITEMS];
 CtoSPacket *cTsPacket = new CtoSPacket;
 StoCPacket *sTcPacket = new StoCPacket;
 
@@ -88,11 +90,8 @@ void Init() {
 
 
 	// C -> S Packet 구조체 초기화
-	cTsPacket->pos.x = INIT_POS;
-	cTsPacket->pos.y = INIT_POS;
 	for (int i = 0; i < 4; ++i)
 		cTsPacket->keyDown[i] = false;
-	cTsPacket->life = INIT_LIFE;
 
 	// S -> C Packet 구조체 초기화
 	sTcPacket->p1Pos.x = INIT_POS;
@@ -156,49 +155,26 @@ void RecvFromClient(SOCKET client_sock, short PlayerID)
 	addrLen = sizeof(clientAddr);
 	getpeername(sock, (SOCKADDR *)&clientAddr, &addrLen);
 
-	//char buf[sizeof(StoCPacket) + 1];
 
-	//// 클라이언트와 데이터 통신
-	//while (1) {
-
-	//	ZeroMemory(buf, sizeof(StoCPacket));
-	//	// 데이터 받기
-	//	retVal = recvn(client_sock, buf, sizeof(StoCPacket), 0);
-	//	if (retVal == SOCKET_ERROR) {
-	//		err_display("recv()");
-	//		break;
-	//	}
-	//	else if (retVal == 0) { break; }
-
-
-	//	// 받은 데이터 서버 관리 패킷에 삽입
-	//	buf[retVal] = '\0';
-	//	cTsPacket = (CtoSPacket*)buf;
-
-	//	printf("[받은 데이터 확인]\n");
-	//	printf("life: %d\n", cTsPacket->life);
-	//	printf("posX: %f, posY: %f\n", cTsPacket->pos.x, cTsPacket->pos.y);
-	//	for (int j = 0; j < 4; ++j)
-	//		printf("%d ", cTsPacket->keyDown[j]);
-	//	//printf("w: %d, a: %d, s: %d, d: %d \n", cTsPacket->keyDown[0]);
-	//}
-
-
-	// ★ 테스트용 데이터 통신에 사용할 변수
-	char buf[40+1];
+	// 테스트 수신
+	char buf[5];
 
 	while (1) {
+		ZeroMemory(buf, sizeof(CtoSPacket));
+
 		// 데이터 받기
-		retVal = recvn(sock, buf, 40, 0);
+		retVal = recvn(sock, buf, SIZE_CToSPACKET, 0);
 		if (retVal == SOCKET_ERROR) {
 			err_display("recv()");
 			break;
 		}
-
+		
 		else if (retVal == 0) { break; }
 
 		// 받은 데이터 출력
 		buf[retVal] = '\0';
+		printf("w: %d, a: %d, s: %d, d: %d \n", buf[0], buf[1], buf[2], buf[3]);
+
 		std::cout << "[TCP/" << inet_ntoa(clientAddr.sin_addr) << ":"
 			<< ntohs(clientAddr.sin_port) << "] " << buf << std::endl;
 	}
@@ -224,15 +200,14 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 	// 클라한테 데이터 받기
 	SOCKET client_sock = (SOCKET)arg;
 
+	const short currentThreadNum = playerID++;
+
 	RecvFromClient(client_sock, playerID);
 
 	// 이 곳에 recv 이벤트 신호 해주기
 	// 바로 다음 줄에 waitfor() 작성
 
 	switch (info.p[playerID]->gameState) {
-	case MainState:
-		break;
-
 	case LobbyState:
 		break;
 
@@ -256,32 +231,14 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 	// 클라한테 데이터 보내기
 
 
+
 	// closesocket()	★ closesocket()하려면 우리가 정의한 데이터 송.수신 함수 인자로 arg말고 socket 넘겨주는게 나을 듯..
 	closesocket(client_sock);
 	//★ 소멸 시 출력(테스트용)
-	printf("[TCP 서버] 클라이언트 %d 종료\n", playerID);
+	printf("[TCP 서버] 클라이언트 %d 종료\n", info.connectedP);
 	// 접속자 수 감소
 	info.connectedP--;
 	return 0;
-}
-
-void UpdatePosition() {
-	
-	// 계산에 필요한 변수
-	Vec tempPos = cTsPacket->pos;
-	bool tempKeyDown[4] = { cTsPacket->keyDown[0], cTsPacket->keyDown[1], cTsPacket->keyDown[2], cTsPacket->keyDown[0] };
-
-	// 계산
-
-	// 서버 -> 클라로 보낼 패킷에 정보 갱신하기
-	sTcPacket->p1Pos = tempPos;
-	sTcPacket->p2Pos = recvDiffPos;	// 다른 스레드의 pos값을 받아와야함.
-
-
-}
-
-void CollisionCheck() {
-
 }
 
 // 모든 연산 및 갱신 스레드 함수
@@ -289,10 +246,8 @@ DWORD WINAPI CalculateThread(LPVOID arg)
 {
 	//★ 생성 시 출력(테스트용)
 	printf("CalculateThread 생성\n");
-	CollisionCheck();
 
-	UpdatePosition();
-	return 0;
+	return 0;         
 }
 
 int main(int argc, char *argv[])

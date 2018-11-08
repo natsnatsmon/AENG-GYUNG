@@ -1,4 +1,2 @@
 ﻿  ITS_MINE_Server.cpp
-c:\users\ha6q6\desktop\project\3학년\12_넷겜플\aeng-gyung\its_mine_server\global.h(33): warning C4091: 'typedef ': 변수를 선언하지 않으면 'Vec' 왼쪽은 무시됩니다.
-  LINK : C:\Users\ha6q6\Desktop\Project\3학년\12_넷겜플\AENG-GYUNG\ITS_MINE_Server\Debug\ITS_MINE_Server.exe을(를) 찾을 수 없거나 마지막 증분 링크에 의해 빌드되지 않았습니다. 전체 링크를 수행하고 있습니다.
   ITS_MINE_Server.vcxproj -> C:\Users\ha6q6\Desktop\Project\3학년\12_넷겜플\AENG-GYUNG\ITS_MINE_Server\Debug\ITS_MINE_Server.exe

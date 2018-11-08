@@ -1,7 +1,10 @@
 #pragma once
 
 #define SERVERPORT 8888
-#define BUFSIZE 1024		//★ 임시 버퍼사이즈이기 때문에 논의 및 수정 필요
+//#define BUFSIZE 1024		//★ 임시 버퍼사이즈이기 때문에 논의 및 수정 필요
+#define SIZE_CToSPACKET 5
+#define SIZE_StoCPACKET 1124
+
 
 #define MAX_PLAYERS 2
 #define MAX_ITEMS 100
@@ -13,8 +16,7 @@
 #define INIT_POS -100.f
 #define INIT_LIFE 5
 
-//#define SIZE_CToSPACKET 14
-//#define SIZE_StoCPACKET 1124
+
 
 //★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
 enum gameState {
@@ -34,9 +36,7 @@ struct Vec {
 // Client -> Server
 #pragma pack(1)
 struct CtoSPacket {
-	Vec pos;
-	bool keyDown[4];
-	short life;
+	BOOL keyDown[4];
 };
 #pragma pack()
 
@@ -48,7 +48,7 @@ struct StoCPacket {
 
 	Vec itemPos[MAX_ITEMS]; // ★ 논의 필요
 	short characterID[100];
-	bool isVisible[100];
+	BOOL isVisible[100];
 
 	DWORD time;
 
@@ -62,7 +62,7 @@ struct SPlayer {
 	short gameState; 	// 게임 상태를 나타내는 변수
 
 	Vec pos;			// 플레이어 위치
-	bool keyDown[4];	// 클라이언트 키 입력 배열
+	BOOL keyDown[4];	// 클라이언트 키 입력 배열
 	short life;			// 플레이어 생명
 };
 
@@ -72,7 +72,7 @@ struct SItemObj {
 	Vec direction;		// 아이템 발사 방향
 	float velocity;		// 아이템 속도
 	short playerID;		// 아이템을 먹은 플레이어의 아이디
-	bool isVisible;		// 화면 표시 여부
+	BOOL isVisible;		// 화면 표시 여부
 };
 
 // 게임 정보 구조체
@@ -83,3 +83,30 @@ struct Info {
 	SPlayer *p[MAX_PLAYERS];	// 플레이어 구조체
 	SItemObj *i[MAX_ITEMS];	// 아이템 구조체
 };
+
+
+
+/*
+
+		// 데이터 받기
+		retVal = recvn(client_sock, buf, sizeof(StoCPacket), 0);
+		if (retVal == SOCKET_ERROR) {
+			err_display("recv()");
+			break;
+		}
+		else if (retVal == 0) { break; }
+
+
+		// 받은 데이터 서버 관리 패킷에 삽입
+		buf[retVal] = '\0';
+		cTsPacket = (CtoSPacket*)buf;
+
+		printf("[받은 데이터 확인]\n");
+		printf("life: %d\n", cTsPacket->life);
+		printf("posX: %f, posY: %f\n", cTsPacket->pos.x, cTsPacket->pos.y);
+		for (int j = 0; j < 4; ++j)
+			printf("%d ", cTsPacket->keyDown[j]);
+	}
+
+
+*/

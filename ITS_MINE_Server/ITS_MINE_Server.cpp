@@ -176,11 +176,11 @@ void RecvFromClient(SOCKET client_sock, short PlayerID)
 		cTsPacket = (CtoSPacket*)buf;
 
 		// 받은 데이터 출력 (테스트)
-		std::cout << "w: "<< cTsPacket->keyDown[0] << " " 
+		std::cout << "\nw: "<< cTsPacket->keyDown[0] << " " 
 			<< "a: " << cTsPacket->keyDown[1] << " "
 			<< "s: " << cTsPacket->keyDown[2] << " "
 			<< "d: " << cTsPacket->keyDown[3] << std::endl;
-		std::cout << "\n[TCP 서버] " << info.connectedP << "번 클라이언트에서 받음"
+		std::cout << "[TCP 서버] " << info.connectedP << "번 클라이언트에서 받음"
 			<< "( IP 주소 = " << inet_ntoa(clientAddr.sin_addr)
 			<< ", 포트 번호 = " << ntohs(clientAddr.sin_port) << " )"
 			<< std::endl;
@@ -255,7 +255,7 @@ void UpdatePosition() {
 
 	// 내 위치, 상대방 위치(다른 스레드에서 위치값을 알아와야 함), 아이템 위치 계산
 
-	// 게임 스테이트(얘는 어디서 체크...?)
+
 
 
 }
@@ -270,6 +270,8 @@ void CollisionCheck()
 bool GameEndCheck()
 {
 	// LifeCheck 작성
+
+	// 목숨이 0이라면 gameState를 변경하기 
 	return false;
 }
 

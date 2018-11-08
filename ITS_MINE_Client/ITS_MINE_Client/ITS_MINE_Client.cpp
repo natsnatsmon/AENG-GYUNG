@@ -167,40 +167,40 @@ void MouseInput(int button, int state, int x, int y)
 
 void KeyDownInput(unsigned char key, int x, int y)
 {
-	if (key == 'w')
+	if (key == 'w' || key == 'W')
 	{
-		cTsPacket->keyDown[1] = TRUE;
+		cTsPacket->keyDown[W] = true;
 	}
-	else if (key == 's')
+	else if (key == 'a' || key == 'A')
 	{
-		cTsPacket->keyDown[3] = TRUE;
+		cTsPacket->keyDown[A] = true;
 	}
-	else if (key == 'a')
+	else if (key == 's' || key == 'S')
 	{
-		cTsPacket->keyDown[0] = TRUE;
+		cTsPacket->keyDown[S] = true;
 	}
-	else if (key == 'd')
+	else if (key == 'd' || key == 'D')
 	{
-		cTsPacket->keyDown[2] = TRUE;
+		cTsPacket->keyDown[D] = true;
 	}
 }
 void KeyUpInput(unsigned char key, int x, int y)
 {
-	if (key == 'w')
+	if (key == 'w' || key == 'W')
 	{
-		cTsPacket->keyDown[0] = TRUE;
+		cTsPacket->keyDown[W] = false;
 	}
-	else if (key == 's')
+	else if (key == 'a' || key == 'A')
 	{
-		cTsPacket->keyDown[3] = TRUE;
+		cTsPacket->keyDown[A] = false;
 	}
-	else if (key == 'a')
+	else if (key == 's' || key == 'S')
 	{
-		cTsPacket->keyDown[1] = TRUE;
+		cTsPacket->keyDown[S] = false;
 	}
-	else if (key == 'd')
+	else if (key == 'd' || key == 'D')
 	{
-		cTsPacket->keyDown[2] = TRUE;
+		cTsPacket->keyDown[D] = false;
 	}
 }
 void SpecialKeyInput(int key, int x, int y)
@@ -232,50 +232,24 @@ void SendToServer(SOCKET s) {
 
 	int retVal;
 	// ★ 테스트용 데이터 통신에 사용할 변수
-	char buf[40];
-	const char *testData[] = {
-		"안뇽안뇽안뇽",
-		"Nice to meet you!",
-		"저 영어 못하는데요",
-		"Sorry"
-	};
-
-	// 서버와 데이터 통신
-	for (int i = 0; i < 4; ++i) {
-		// 데이터 입력 (시뮬레이션)
-		memset(buf, '#', sizeof(buf));
-		strncpy(buf, testData[i], strlen(testData[i]));
-
-		cout << buf << endl;
-
-		// 데이터 보내기
-		retVal = send(sock, buf, 40, 0);
-		if (retVal == SOCKET_ERROR) {
-			err_display("send()");
-			break;
-		}
+	char buf[SIZE_CToSPACKET];
 
 
-		std::cout << "[TCP 클라이언트] " << retVal << "바이트를 보냈습니다. \n";
+	// 보내려는 버퍼에 값 대입
+	buf[W] = cTsPacket->keyDown[W];
+	buf[A] = cTsPacket->keyDown[A];
+	buf[S] = cTsPacket->keyDown[S];
+	buf[D] = cTsPacket->keyDown[D];
+
+	// 전송(송신버퍼에 복사)
+	retVal = send(sock, buf, sizeof(CtoSPacket), 0);
+	if (retVal == SOCKET_ERROR)
+	{
+		err_display("send()");
+		exit(1);
 	}
-
-	//int retval = 0;
-
-	//for (int i = 0; i < 4; i++)
-	//	cTsPacket->keyDown[i] = 0;
-	//cTsPacket->life = 1107;
-	//cTsPacket->pos = { 50, 50 };
-
-	//cout << cTsPacket->life << endl;
-
-	//retval = send(sock, (char*)&cTsPacket, sizeof(CtoSPacket), 0);
-	//if (retval == SOCKET_ERROR)
-	//{
-	//	err_display("send()");
-	//	exit(1);
-	//}
-
-	//cout << "다보냄!!!" << endl;
+	else
+		cout << "다보냄!!!" << endl;
 }
 
 int main(int argc, char **argv)
@@ -310,7 +284,9 @@ int main(int argc, char **argv)
 
 	glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
 
-		// 윈속 초기화
+	Init();
+
+	// 윈속 초기화
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 		return 1;
 
@@ -324,14 +300,13 @@ int main(int argc, char **argv)
 	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
 	serveraddr.sin_port = htons(SERVERPORT);
 	retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
-	if (retval == SOCKET_ERROR) err_quit("connect()");
-
-	cout << "connect() 완료!\n";
+	if (retval == SOCKET_ERROR) 
+		err_quit("connect()");
+	else
+		cout << "connect() 완료!\n";
 
 	g_ScnMgr = new ScnMgr();
 
-	for (int i = 0; i < 4; i++)
-		cTsPacket->keyDown[i] = 0;
 	SendToServer(sock);
 
 	glutMainLoop();		//메인 루프 함수

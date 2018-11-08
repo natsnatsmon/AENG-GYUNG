@@ -43,48 +43,49 @@ enum player {
 	player1, player2, player3, player4, nullPlayer = 99
 };
 
-#pragma pack(1)
+
 typedef struct Vec 
 { float x; float y; };
 
-
 // Client -> Server
-struct CtoSPacket
-{   
-	Vec pos;     
-	bool keyDown[4] = { 0, 0, 0, 0 };//스레드 동기화 왼쪽부터 시계방향
-	short life = 5;  
-}; 
-
-// Server -> Client 
-struct StoCPacket 
-{  
-	DWORD time;
-	Vec p1Pos = { 0, 0 };
-	Vec p2Pos = { 0, 0 };
-
-	Vec itemPos[100];  
-	
-
-	short life;  
-	short gameState;
+#pragma pack(1)
+struct CtoSPacket {
+	bool keyDown[4];
 };
+#pragma pack()
 
-struct ItemObj {
+#pragma pack(1)
+// Server -> Client
+struct StoCPacket {
+	short gameState;
+	DWORD time;
+
+	short life;
+
+	Vec p1Pos;
+	Vec p2Pos;
+
+	Vec itemPos[MAX_ITEMS]; // ★ 논의 필요
+	short playerID[MAX_ITEMS];
+	bool isVisible[MAX_ITEMS];
+};
+#pragma pack()
+
+// 아이템 구조체
+struct CItemObj {
 	Vec pos;   // 아이템 위치 
 	bool isVisible;  // 화면 표시 여부
 
-	short playerID;
+	short playerID;	// 아이템을 먹은 플레이어ID
 };
 
-struct Info {
+// 게임 정보 구조체
+struct CInfo {
 	short gameState;  // 게임 상태를 나타내는 변수 
 	DWORD gameTime;  // 게임 시간 
 
-	Vec player[2];
-	short life;
-	ItemObj item[100];  // 아이템 구조체
+	short life;		// 플레이어 생명
+
+	Vec playerPos[2];
+	CItemObj item[MAX_ITEMS];  // 아이템 구조체
 }; 
-
-#pragma pack(4)
-

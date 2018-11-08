@@ -39,8 +39,8 @@ DWORD g_PrevTime = 0;
 int g_Shoot = SHOOT_NONE;
 
 // 구조체들 선언
-Info info;
-ItemObj *item[MAX_ITEMS];
+CInfo info;
+CItemObj *item[MAX_ITEMS];
 
 CtoSPacket *cTsPacket = new CtoSPacket;
 StoCPacket *sTcPacket = new StoCPacket;
@@ -49,7 +49,7 @@ void Init() {
 
 	// 아이템 구조체 초기화
 	for (int i = 0; i < MAX_ITEMS; ++i) {
-		item[i] = new ItemObj;
+		item[i] = new CItemObj;
 		item[i]->pos.x = 0;
 		item[i]->pos.y = 0;
 		item[i]->playerID = nullPlayer;
@@ -57,12 +57,8 @@ void Init() {
 	}
 
 	// C -> S Packet 구조체 초기화
-	cTsPacket->pos.x = INIT_POS;
-	cTsPacket->pos.y = INIT_POS;
 	for (int i = 0; i < 4; ++i)
 		cTsPacket->keyDown[i] = false;
-	cTsPacket->life = INIT_LIFE;
-
 
 	// S -> C Packet 구조체 초기화
 	sTcPacket->p1Pos.x = INIT_POS;
@@ -77,9 +73,10 @@ void Init() {
 
 
 	// 게임 정보 구조체 초기화
+	info.gameState = MainState;
 	info.gameTime = 0;
 	for (int i = 0; i < MAX_PLAYERS; ++i)
-		info.player[i] = { 0, };
+		info.playerPos[i] = { 0, };
 	for (int i = 0; i < MAX_ITEMS; ++i)
 		info.item[i] = { {0, 0}, 0, nullPlayer };
 
@@ -243,7 +240,6 @@ void SendToServer(SOCKET s) {
 		"Sorry"
 	};
 
-
 	// 서버와 데이터 통신
 	for (int i = 0; i < 4; ++i) {
 		// 데이터 입력 (시뮬레이션)
@@ -336,8 +332,6 @@ int main(int argc, char **argv)
 
 	for (int i = 0; i < 4; i++)
 		cTsPacket->keyDown[i] = 0;
-	cTsPacket->life = 5;
-	cTsPacket->pos = { 50, 50 };
 	SendToServer(sock);
 
 	glutMainLoop();		//메인 루프 함수

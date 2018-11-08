@@ -2,9 +2,8 @@
 
 #define SERVERPORT 8888
 //#define BUFSIZE 1024		//★ 임시 버퍼사이즈이기 때문에 논의 및 수정 필요
-#define SIZE_CToSPACKET 5
+#define SIZE_CToSPACKET 4
 #define SIZE_StoCPACKET 1124
-
 
 #define MAX_PLAYERS 2
 #define MAX_ITEMS 100
@@ -15,7 +14,6 @@
 
 #define INIT_POS -100.f
 #define INIT_LIFE 5
-
 
 
 //★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
@@ -32,30 +30,6 @@ enum player {
 struct Vec {
 	float x; float y;
 };
-
-// Client -> Server
-#pragma pack(1)
-struct CtoSPacket {
-	BOOL keyDown[4];
-};
-#pragma pack()
-
-#pragma pack(1)
-// Server -> Client
-struct StoCPacket {
-	Vec p1Pos;
-	Vec p2Pos;
-
-	Vec itemPos[MAX_ITEMS]; // ★ 논의 필요
-	short characterID[100];
-	BOOL isVisible[100];
-
-	DWORD time;
-
-	short life;
-	short gameState;
-};
-#pragma pack()
 
 // 플레이어 구조체
 struct SPlayer {
@@ -76,7 +50,7 @@ struct SItemObj {
 };
 
 // 게임 정보 구조체
-struct Info {
+struct SInfo {
 	short connectedP;		// 연결된 플레이어의 수
 	DWORD gameTime;			// 게임 시간
 
@@ -84,7 +58,29 @@ struct Info {
 	SItemObj *i[MAX_ITEMS];	// 아이템 구조체
 };
 
+// Client -> Server
+#pragma pack(1)
+struct CtoSPacket {
+	bool keyDown[4];
+};
+#pragma pack()
 
+#pragma pack(1)
+// Server -> Client
+struct StoCPacket {
+	short gameState;
+	DWORD time;
+
+	short life;
+
+	Vec p1Pos;
+	Vec p2Pos;
+
+	Vec itemPos[MAX_ITEMS];
+	short playerID[MAX_ITEMS];
+	bool isVisible[MAX_ITEMS];
+};
+#pragma pack()
 
 /*
 

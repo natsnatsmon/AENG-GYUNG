@@ -42,8 +42,6 @@ void err_display(const char *msg)
 }
 
 // 플레이어, 아이템 구조체
-//SPlayer *players[MAX_PLAYERS];
-//SItemObj *item[MAX_ITEMS];
 CtoSPacket *cTsPacket = new CtoSPacket;
 StoCPacket *sTcPacket = new StoCPacket;
 
@@ -258,7 +256,6 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 	// 클라한테 데이터 보내기
 
 
-
 	// closesocket()	★ closesocket()하려면 우리가 정의한 데이터 송.수신 함수 인자로 arg말고 socket 넘겨주는게 나을 듯..
 	closesocket(client_sock);
 	//★ 소멸 시 출력(테스트용)
@@ -268,12 +265,33 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 	return 0;
 }
 
+void UpdatePosition() {
+	
+	// 계산에 필요한 변수
+	Vec tempPos = cTsPacket->pos;
+	bool tempKeyDown[4] = { cTsPacket->keyDown[0], cTsPacket->keyDown[1], cTsPacket->keyDown[2], cTsPacket->keyDown[0] };
+
+	// 계산
+
+	// 서버 -> 클라로 보낼 패킷에 정보 갱신하기
+	sTcPacket->p1Pos = tempPos;
+	sTcPacket->p2Pos = recvDiffPos;	// 다른 스레드의 pos값을 받아와야함.
+
+
+}
+
+void CollisionCheck() {
+
+}
+
 // 모든 연산 및 갱신 스레드 함수
 DWORD WINAPI CalculateThread(LPVOID arg)
 {
 	//★ 생성 시 출력(테스트용)
 	printf("CalculateThread 생성\n");
+	CollisionCheck();
 
+	UpdatePosition();
 	return 0;
 }
 

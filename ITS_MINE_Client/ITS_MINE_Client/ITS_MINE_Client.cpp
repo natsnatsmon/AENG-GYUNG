@@ -66,7 +66,15 @@ void Init() {
 	sTcPacket->p1Pos.y = INIT_POS;
 	sTcPacket->p2Pos.x = INIT_POS;
 	sTcPacket->p2Pos.y = INIT_POS;
-	// 아이템은 아직 초기화 안함
+
+	for (int i = 0; i < MAX_ITEMS; ++i) {
+		sTcPacket->itemPos[i].x = INIT_POS;
+		sTcPacket->itemPos[i].y = INIT_POS;
+		sTcPacket->playerID[i] = nullPlayer;
+		sTcPacket->isVisible[i] = false;
+
+	}
+
 	sTcPacket->time = 0;
 	sTcPacket->life = INIT_LIFE;
 	sTcPacket->gameState = MainState;
@@ -80,6 +88,34 @@ void Init() {
 		info.playerPos[i] = { 0, };
 	for (int i = 0; i < MAX_ITEMS; ++i)
 		info.item[i] = { {0, 0}, 0, nullPlayer };
+	
+
+
+	// Test용!!!
+	info.gameState = GamePlayState;
+
+	info.playerPos[0] = { 0.f, 10.f };
+	info.playerPos[1] = { 22.f, -38.f };
+
+	item[0]->pos.x = 30.f;
+	item[0]->pos.y = 20.f;
+	item[0]->playerID = nullPlayer;
+	item[0]->isVisible = true;
+
+	item[1]->pos.x = -70.f;
+	item[1]->pos.y = -72.f;
+	item[1]->playerID = player1;
+	item[1]->isVisible = true;
+
+	item[2]->pos.x = 143.f;
+	item[2]->pos.y = 153.f;
+	item[2]->playerID = player2;
+	item[2]->isVisible = true;
+
+	item[3]->pos.x = -111.f;
+	item[3]->pos.y = 111.f;
+	item[3]->playerID = nullPlayer;
+	item[3]->isVisible = true;
 
 }
 
@@ -102,6 +138,9 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 	return (len - left);
 }
 
+void RecvFromServer(SOCKET sock) {
+
+}
 
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char *msg)
@@ -168,6 +207,18 @@ void MouseInput(int button, int state, int x, int y)
 
 void KeyDownInput(unsigned char key, int x, int y)
 {
+	if (info.gameState == MainState) {
+		int retval = 0;
+		retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
+		if (retval == SOCKET_ERROR)
+			err_quit("connect()");
+		else {
+			cout << "connect() 완료!\n";
+			info.gameState = LobbyState;
+			cout << info.gameState;
+		}
+	}
+
 	if (key == 'w' || key == 'W')
 	{
 		cTsPacket->keyDown[W] = true;
@@ -204,29 +255,30 @@ void KeyUpInput(unsigned char key, int x, int y)
 		cTsPacket->keyDown[D] = false;
 	}
 }
-void SpecialKeyInput(int key, int x, int y)
-{
-	switch (key)
-	{
-	case GLUT_KEY_UP:
-		g_Shoot = SHOOT_UP;
-		break;
-	case GLUT_KEY_DOWN:
-		g_Shoot = SHOOT_DOWN;
-		break;
-	case GLUT_KEY_RIGHT:
-		g_Shoot = SHOOT_RIGHT;
-		break;
-	case GLUT_KEY_LEFT:
-		g_Shoot = SHOOT_LEFT;
-		break;
-	}
-}
 
-void SpecialKeyUpInput(int key, int x, int y)
-{
-	g_Shoot = SHOOT_NONE;
-}
+// ★ 총을 쏘는게 없으니 없애도 되지 않을까요? 논의 필요
+//void SpecialKeyInput(int key, int x, int y)
+//{
+//	switch (key)
+//	{
+//	case GLUT_KEY_UP:
+//		g_Shoot = SHOOT_UP;
+//		break;
+//	case GLUT_KEY_DOWN:
+//		g_Shoot = SHOOT_DOWN;
+//		break;
+//	case GLUT_KEY_RIGHT:
+//		g_Shoot = SHOOT_RIGHT;
+//		break;
+//	case GLUT_KEY_LEFT:
+//		g_Shoot = SHOOT_LEFT;
+//		break;
+//	}
+//}
+//void SpecialKeyUpInput(int key, int x, int y)
+//{
+//	g_Shoot = SHOOT_NONE;
+//}
 
 void SendToServer(SOCKET s) {
 	cout << "SendToServer() 호출\n";
@@ -252,6 +304,23 @@ void SendToServer(SOCKET s) {
 	else
 		cout << "다보냄!!!" << endl;
 }
+
+// ★ 누가 Delete점 만들어주세요
+//void DeleteAll()
+//{
+//	delete cTsPacket;
+//	delete sTcPacket;
+//
+//
+//
+//	for (int i = 0; i < MAX_PLAYERS; ++i) {
+//		delete info.playerPos;
+//	}
+//
+//	for (int i = 0; i < MAX_ITEMS; ++i) {
+//		delete info.item;
+//	}
+//}
 
 int main(int argc, char **argv)
 {
@@ -279,8 +348,8 @@ int main(int argc, char **argv)
 	glutKeyboardFunc(KeyDownInput);
 	glutKeyboardUpFunc(KeyUpInput);
 	glutMouseFunc(MouseInput);
-	glutSpecialFunc(SpecialKeyInput);
-	glutSpecialUpFunc(SpecialKeyUpInput);
+	//glutSpecialFunc(SpecialKeyInput);
+	//glutSpecialUpFunc(SpecialKeyUpInput);
 
 
 	glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
@@ -300,15 +369,11 @@ int main(int argc, char **argv)
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
 	serveraddr.sin_port = htons(SERVERPORT);
-	retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
-	if (retval == SOCKET_ERROR) 
-		err_quit("connect()");
-	else
-		cout << "connect() 완료!\n";
+
+	// 만약 connect()가 성공했다면~
+	//SendToServer(sock);
 
 	g_ScnMgr = new ScnMgr();
-
-	SendToServer(sock);
 
 	glutMainLoop();		//메인 루프 함수
 	delete g_ScnMgr;

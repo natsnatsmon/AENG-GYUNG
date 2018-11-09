@@ -23,9 +23,10 @@
 #define MAX_PLAYERS 2
 #define MAX_ITEMS 100
 #define MAX_POS 720
+#define MIN_POS 80
 
-#define R_PLAYER 40 // 플레이어 반지름
-#define R_ITEM 20 // 아이템 반지름
+#define R_PLAYER 40.f // 플레이어 반지름
+#define R_ITEM 20.f // 아이템 반지름
 
 #define INIT_POS -100.f
 #define INIT_LIFE 5
@@ -88,12 +89,12 @@ struct CItemObj {
 };
 
 // 게임 정보 구조체
-struct CInfo {
+typedef struct CInfo {
 	short gameState;  // 게임 상태를 나타내는 변수 
 	DWORD gameTime;  // 게임 시간 
 
 	short life;		// 플레이어 생명
 
-	Vec playerPos[2];
+	Vec playerPos[MAX_PLAYERS];
 	CItemObj item[MAX_ITEMS];  // 아이템 구조체
 }; 

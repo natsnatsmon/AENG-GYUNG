@@ -2,10 +2,13 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <Windows.h>
-#define SERVERIP   "127.0.0.1"
+#define SERVERIP   "127.0.0.1"		// 루프백(개인 작업 시)
 //#define SERVERIP   "59.16.87.178"      // 김정현 서버 시
 //#define SERVERIP   "182.210.213.139"      // 박하연 서버 시
 #define SERVERPORT 8888
+
+#define SIZE_CToSPACKET 6
+#define SIZE_StoCPACKET 1122
 
 #define HERO_ID	0 
 
@@ -31,14 +34,10 @@
 #define INIT_POS -100.f
 #define INIT_LIFE 5
 
-#define SIZE_CToSPACKET 14
-#define SIZE_StoCPACKET 824
-
 #define W 0
 #define A 1
 #define S 2
 #define D 3
-
 
 
 //★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
@@ -60,6 +59,7 @@ struct Vec {
 #pragma pack(1)
 struct CtoSPacket {
 	bool keyDown[4];
+	short life;
 };
 #pragma pack()
 
@@ -68,8 +68,6 @@ struct CtoSPacket {
 struct StoCPacket {
 	short gameState;
 	DWORD time;
-
-	short life;
 
 	Vec p1Pos;
 	Vec p2Pos;

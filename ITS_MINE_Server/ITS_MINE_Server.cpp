@@ -1,3 +1,9 @@
+// [ 서버 알고리즘 ]
+// RecvAndUpdateInfo에서 데이터를 받아서 충돌체크 및 포지션 갱신 후 대기(hSendEvt 신호 대기)
+// -> UpdatePackAndSend에서 갱신된 데이터들을 패킷구조체에 저장한 후 패킷 전송 후 SetEvent하고 대기(hUpdateInfoEvt 신호 대기)
+// -> 다시 돌아와 RecvAndUpdateInfo에서 아까 갱신한 데이터들을 info 구조체에 한꺼번에 넣어준 후(즉, 이 때만 info 정보에 접근함) SetEvent
+// -> 위 과정 반복
+
 #define _WINSOCK_DEPRECATED_NO_WARNINGS		// inet_addr errror 
 #pragma comment(lib, "ws2_32")
 
@@ -8,11 +14,22 @@
 #include <iostream>
 
 // 동기화를 위한 이벤트 객체 
-HANDLE hRecvEvt;		// 클라이언트로부터 데이터 수신 이벤트 객체
-HANDLE hUpdateEvt;		// 연산 및 갱신 이벤트 객체
+HANDLE hUpdateInfoEvt;		// 데이터를 수신하여 계산 및 Info 갱신하는 이벤트 객체 (이전 RecvEvt 객체)
+HANDLE hSendEvt;			// sTcPacket을 갱신하고 데이터를 전송하는 이벤트 객체 (이전 UpdateEvt 객체)
 
 // 서버 구동에 사용할 변수(게임 관련 정보)
 SInfo info;
+
+// 패킷 구조체 선언
+CtoSPacket *cTsPacket[MAX_PLAYERS];
+StoCPacket *sTcPacket = new StoCPacket;
+
+// 각 클라에 대해 갱신된 값을 갖고있을 변수
+SPlayer *tempPlayers[MAX_PLAYERS];
+SItemObj *tempItems[MAX_PLAYERS];
+
+// 각 클라이언트 전용 소켓 배열
+SOCKET clientSocks[2];
 
 // 이전 시간 저장 변수
 DWORD g_PrevTime = 0;
@@ -44,44 +61,62 @@ void err_display(const char *msg)
 	LocalFree(lpMsgBuf);
 }
 
-// 플레이어, 아이템 구조체
-CtoSPacket *cTsPacket = new CtoSPacket;
-StoCPacket *sTcPacket = new StoCPacket;
 
 void Init() {
-	
 	// 게임 정보 구조체 초기화
 	info.connectedP = 0;
 	info.gameTime = 0;
 
-	// 게임 정보 구조체 내의 플레이어 구조체 정보 초기화
+	// 게임 정보 구조체 내의 플레이어 구조체 정보 및 임시플레이어 구조체 정보 초기화
 	for (int i = 0; i < MAX_PLAYERS; ++i) {
-		info.p[i] = new SPlayer;
-		info.p[i]->gameState = LobbyState;
-		info.p[i]->pos.x = INIT_POS;
-		info.p[i]->pos.y = INIT_POS;
-		info.p[i]->life = INIT_LIFE;
+		info.players[i] = new SPlayer;
+		info.players[i]->gameState = LobbyState;
+		info.players[i]->pos.x = INIT_POS;
+		info.players[i]->pos.y = INIT_POS;
+		info.players[i]->life = INIT_LIFE;
 		for (int j = 0; j < 4; ++j)
-			info.p[i]->keyDown[j] = false;
+			info.players[i]->keyDown[j] = false;
+
+		tempPlayers[i] = new SPlayer;
+		tempPlayers[i]->gameState = info.players[i]->gameState;
+		tempPlayers[i]->pos.x = info.players[i]->pos.x;
+		tempPlayers[i]->pos.y = info.players[i]->pos.y;
+		tempPlayers[i]->life = info.players[i]->life;
+		for (int j = 0; j < 4; ++j)
+			tempPlayers[i]->keyDown[j] = info.players[i]->keyDown[j];
 	}
 
-	// 게임 정보 구조체 내의 아이템 구조체 정보 초기화
+	// 게임 정보 구조체 내의 아이템 구조체 정보 및 임시아이템 구조체 정보 초기화
 	for (int i = 0; i < MAX_ITEMS; ++i) {
-		info.i[i] = new SItemObj;
+		info.items[i] = new SItemObj;
 		// 아이템의 좌표를 40 ~ 760 사이로 랜덤하게 놓기
-		info.i[i]->pos.x = (float)(rand() % 720 + (R_ITEM * 2));
-		info.i[i]->pos.y = (float)(rand() % 720 + (R_ITEM * 2));
-		info.i[i]->direction.x = 0;
-		info.i[i]->direction.y = 0;
-		info.i[i]->velocity = 0.f;
-		info.i[i]->playerID = nullPlayer;
-		info.i[i]->isVisible = false;
-	}
+		info.items[i]->pos.x = (float)(rand() % 720 + (R_ITEM * 2));
+		info.items[i]->pos.y = (float)(rand() % 720 + (R_ITEM * 2));
+		info.items[i]->direction.x = 0;
+		info.items[i]->direction.y = 0;
+		info.items[i]->velocity = 0.f;
+		info.items[i]->playerID = nullPlayer;
+		info.items[i]->isVisible = false;
 
+		tempItems[i] = new SItemObj;
+		tempItems[i]->pos.x = info.items[i]->pos.x;
+		tempItems[i]->pos.y = info.items[i]->pos.y;
+		tempItems[i]->direction.x = info.items[i]->direction.x;
+		tempItems[i]->direction.y = info.items[i]->direction.y;
+		tempItems[i]->velocity = info.items[i]->velocity;
+		tempItems[i]->playerID = info.items[i]->playerID;
+		tempItems[i]->isVisible = info.items[i]->isVisible;
+	}
 
 	// C -> S Packet 구조체 초기화
-	for (int i = 0; i < 4; ++i)
-		cTsPacket->keyDown[i] = false;
+	for (int i = 0; i < MAX_PLAYERS; ++i)
+	{
+		cTsPacket[i]= new CtoSPacket;
+		cTsPacket[i]->life = INIT_LIFE;
+
+		for(int j = 0; j < 4; j++)
+			cTsPacket[i]->keyDown[j] = false;
+	}
 
 	// S -> C Packet 구조체 초기화
 	sTcPacket->p1Pos.x = INIT_POS;
@@ -117,15 +152,18 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 void DeleteAll()
 {
-	delete cTsPacket;
 	delete sTcPacket;
 
 	for (int i = 0; i < MAX_PLAYERS; ++i) {
-		delete info.p[i];
+		delete info.players[i];
+		delete cTsPacket[i];
+
+		delete tempItems[i];
+		delete tempPlayers[i];
 	}
 
 	for (int i = 0; i < MAX_ITEMS; ++i) {
-		delete info.i[i];
+		delete info.items[i];
 	}
 }
 
@@ -135,10 +173,11 @@ void RecvFromClient(SOCKET client_sock, short PlayerID)
 {
 	int retVal;
 
+	SOCKET sock = client_sock;
+	short playerID = PlayerID;
+
 	SOCKADDR_IN clientAddr;
 	int addrLen;
-
-	SOCKET sock = client_sock;
 
 	// 클라이언트 정보 받기
 	addrLen = sizeof(clientAddr);
@@ -154,21 +193,26 @@ void RecvFromClient(SOCKET client_sock, short PlayerID)
 		retVal = recvn(sock, buf, SIZE_CToSPACKET, 0);
 		if (retVal == SOCKET_ERROR) {
 			err_display("recv()");
+			closesocket(sock);
+			//★ 소멸 시 출력(테스트용)
+			printf("[TCP 서버] 클라이언트 %d 종료\n", playerID);
 			break;
 		}
 		else if (retVal == 0) { break; }
 
 		buf[retVal] = '\0';
 
-		// 받은 buf 형 변환 후 대입
-		cTsPacket = (CtoSPacket*)buf;
+		// 해당하는 클라이언트 패킷버퍼에 받은 데이터(buf)를 복사
+		memcpy(cTsPacket[playerID], buf, SIZE_CToSPACKET);
+
 
 		// 받은 데이터 출력 (테스트)
-		std::cout << "\nw: "<< cTsPacket->keyDown[W] << " " 
-			<< "a: " << cTsPacket->keyDown[A] << " "
-			<< "s: " << cTsPacket->keyDown[S] << " "
-			<< "d: " << cTsPacket->keyDown[D] << std::endl;
-		std::cout << "[TCP 서버] " << info.connectedP << "번 클라이언트에서 받음"
+		std::cout << "\nw: "<< cTsPacket[playerID]->keyDown[W] << " "
+			<< "a: " << cTsPacket[playerID]->keyDown[A] << " "
+			<< "s: " << cTsPacket[playerID]->keyDown[S] << " "
+			<< "d: " << cTsPacket[playerID]->keyDown[D] << std::endl
+			<< "life: " << cTsPacket[playerID]->life << std::endl
+			<< "[TCP 서버] " << playerID << "번 클라이언트에서 받음"
 			<< "( IP 주소 = " << inet_ntoa(clientAddr.sin_addr)
 			<< ", 포트 번호 = " << ntohs(clientAddr.sin_port) << " )"
 			<< std::endl;
@@ -176,71 +220,23 @@ void RecvFromClient(SOCKET client_sock, short PlayerID)
 }
 
 // 사용자 정의 데이터 송신 함수(클라이언트에게 갱신된 데이터 송신)
-void SendToClient(LPVOID arg, short PlayerID)
+void SendToClient(LPVOID arg, short playerID)
 {
 	// 테스트 송신
 	char buf[SIZE_StoCPACKET];
 
-
+	
 }
 
 
-// 클라이언트로부터 데이터를 주고 받는 스레드 함수
-DWORD WINAPI ProccessClient(LPVOID arg)
-{
-	//★ 생성 시 출력(테스트용)
-	printf("ProccessClient 생성\n");
+void UpdatePosition(short playerID) {
 
-	// 접속자 수를 활용해 플레이어ID 부여
-	short playerID = info.connectedP++;
-
-	// 클라한테 데이터 받기
-	SOCKET client_sock = (SOCKET)arg;
-
-	RecvFromClient(client_sock, playerID);
-
-	// 이 곳에 recv 이벤트 신호 해주기
-	SetEvent(hRecvEvt);
-
-	// 바로 다음 줄에 waitfor() 작성
-	WaitForSingleObject(hUpdateEvt, INFINITE);
-
-	switch (info.p[playerID]->gameState) {
-	case LobbyState:
-		// 로비에서는 gamestate가 변경되었을때만 gamestate 정보를 보내면 된당
-		break;
-
-	case GamePlayState:
-		// 이때는 패킷내용 다 필요하고
-		break;
-
-	case GameOverState:
-		// 이때에는 뭐 받아야댐??
-		break;
-
-	default:
-		printf("state 오류!\n");
-		return 1;
-	}
-
-
-	// 받는 이벤트 기다린다.....
-
-	// 클라한테 데이터 보내기
-
-
-	// closesocket()	★ closesocket()하려면 우리가 정의한 데이터 송.수신 함수 인자로 arg말고 socket 넘겨주는게 나을 듯..
-	closesocket(client_sock);
-	//★ 소멸 시 출력(테스트용)
-	printf("[TCP 서버] 클라이언트 %d 종료\n", info.connectedP);
-	// 접속자 수 감소
-	info.connectedP--;
-	return 0;
-}
-
-void UpdatePosition() {
-
-	BOOL tempKeyDown[4] = { cTsPacket->keyDown[W], cTsPacket->keyDown[A], cTsPacket->keyDown[S], cTsPacket->keyDown[D] };
+	BOOL tempKeyDown[4] = { 
+		cTsPacket[playerID]->keyDown[W], 
+		cTsPacket[playerID]->keyDown[A], 
+		cTsPacket[playerID]->keyDown[S], 
+		cTsPacket[playerID]->keyDown[D] 
+	};
 
 	// 내 위치 계산 및 대입
 	// elapsed time 계산
@@ -258,26 +254,28 @@ void UpdatePosition() {
 	float forceX = 0.f;
 	float forceY = 0.f;
 	float amount = 4.f;
-	if (cTsPacket->keyDown[W])
+
+	float Accel_x, Accel_y;
+	float Vel_x, Vel_y;
+	
+
+	if (tempKeyDown[W])
 	{
 		forceY += amount;
 	}	
-	if (cTsPacket->keyDown[A])
+	if (tempKeyDown[A])
 	{
 		forceX -= amount;
 	}
-	if (cTsPacket->keyDown[S])
+	if (tempKeyDown[S])
 	{
 		forceY -= amount;
 	}
-	if (cTsPacket->keyDown[D])
+	if (tempKeyDown[D])
 	{
 		forceX += amount;
 	}
-	
-	// Apply Force
-	float Accel_x, Accel_y;
-	float Vel_x, Vel_y;
+
 	// calc accel
 	Accel_x = forceX / MASS;
 	Accel_y = forceY / MASS;
@@ -335,24 +333,25 @@ void UpdatePosition() {
 	Vel_x = Vel_x + Accel_x * eTime;
 	Vel_y = Vel_y + Accel_y * eTime;
 
-	//// calc pos
-	//info.p[playerID]->pos.x = info.p[playerID]->pos.x + Vel_x * eTime;
-	//info.p[playerID]->pos.y = info.p[playerID]->pos.y + Vel_y * eTime;
+	// calc pos(최종 계산된 위치값을 갖고있음)
+	tempPlayers[playerID]->pos.x = tempPlayers[playerID]->pos.x + Vel_x * eTime;
+	tempPlayers[playerID]->pos.y = tempPlayers[playerID]->pos.y + Vel_y * eTime;
 
-
-	// 상대방 위치(다른 스레드에서 상대 위치값을 알아와야 함) 대입
-	
-	
 	
 	// 아이템 위치 계산 및 대입(종원)
+	
 
 
 }
 
 // 종원
-void CollisionCheck()
+void CollisionCheck(short playerID)
 {
+	// playerID를 이용해 계산 후 tempItems[playerID]에 넣을 것!
 
+	// 아이템 먹은 플레이어ID
+
+	// 아이템 표시 여부
 }
 
 // 하연
@@ -363,7 +362,7 @@ bool GameEndCheck()
 
 	// LifeCheck 작성
 	for (int playerID = 0; playerID < MAX_PLAYERS; ++playerID) {
-		if (info.p[playerID]->life <= 0) {
+		if (info.players[playerID]->life <= 0) {
 			sTcPacket->gameState = GameOverState;
 			return true;
 		}
@@ -377,24 +376,94 @@ bool GameEndCheck()
 	return false;
 }
 
-// 모든 연산 및 갱신 스레드 함수
-DWORD WINAPI CalculateThread(LPVOID arg)
+
+// 데이터를 수신하여 계산 및 Info 갱신하는 스레드 (이전 ProccessClient)
+DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
+{
+	//★ 생성 시 출력(테스트용)
+	printf("RecvAndUpdateInfo 생성 (이전 ProccessClient)\n");
+
+	// 접속자 수를 활용해 플레이어ID 부여
+	short playerID = info.connectedP++;
+
+	// 전용소켓
+	SOCKET client_sock = (SOCKET)arg;
+	
+	// 전용소켓을 갖는 전역변수 배열에 대입
+	clientSocks[playerID] = client_sock;
+
+	// 데이터 받아오기
+	RecvFromClient(client_sock, playerID);
+
+	// 받은 데이터를 이용해 계산
+	// 충돌로 인한 아이템 먹은 플레이어ID, 아이템 표시 여부 계산
+	CollisionCheck(playerID);	// ★ 종원
+
+	// 위에서 계산한 결과와 받은 데이터를 토대로 게임이 종료되었는지 체크
+	if (!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)
+		UpdatePosition(playerID);
+	
+	// 계산한 값 info에 넣기 전, hSendEvt 이벤트 신호 대기
+	WaitForSingleObject(hSendEvt, INFINITE);
+
+	// 위에서 계산한 모든 갱신된 값을 info에 대입
+	// 캐릭터 위치
+	info.players[playerID]->pos.x = tempPlayers[playerID]->pos.x;
+	info.players[playerID]->pos.y = tempPlayers[playerID]->pos.y;
+
+	// 스테이트에 따른 switch문(이건 어디로 가야하나..?)
+	/*
+	switch (info.players[playerID]->gameState) {
+	case LobbyState:
+		// 로비에서는 gamestate가 변경되었을때만 gamestate 정보를 보내면 된당
+		break;
+
+	case GamePlayState:
+		// 이때는 패킷내용 다 필요하고
+		break;
+
+	case GameOverState:
+		// 이때에는 뭐 받아야댐??
+		break;
+
+	default:
+		printf("state 오류!\n");
+		return 1;
+	}
+	*/
+
+
+	// 이 곳에 hUpdateInfoEvt 이벤트 신호 해주기
+	SetEvent(hUpdateInfoEvt);
+
+
+	// closesocket()
+	closesocket(client_sock);
+	//★ 소멸 시 출력(테스트용)
+	printf("[TCP 서버] 클라이언트 %d 종료\n", playerID);
+	// 접속자 수 감소
+	info.connectedP--;
+	return 0;
+}
+
+
+// sTcPacket을 갱신하고 데이터를 전송하는 스레드 (이전 CalculateThread)
+DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 {
 	// ★ 생성 시 출력(테스트용)
-	printf("CalculateThread 생성\n");
+	printf("UpdatePackAndSend 생성 (이전 CalculateThread)\n");
+
+	// sTcPacket에 갱신된 정보 넣기 전, hUpdateInfoEvt 이벤트 신호 대기
+	WaitForSingleObject(hUpdateInfoEvt, INFINITE);
+
+	// 패킷에 갱신된 info 값들을 대입
+
+	
+	// SendToClient() 작성
 
 
-	// "데이터 다 받음" 이벤트 신호 체크(waitfor())
-	//   이 곳에 작성해야함.
-	WaitForSingleObject(hRecvEvt, INFINITE);
-
-	// 충돌로 인한 내 생명, 아이템 먹은 플레이어ID, 아이템 표시 여부 계산하여 sTcPacket에 각 각 대입
-	CollisionCheck();	// ★ 종원
-
-	// 위에서 계산한 결과를 토대로 게임이 종료되었는지 체크하여 
-	if(!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)
-		UpdatePosition();
-
+	// 패킷 클라들한테 다 보냈다!
+	SetEvent(hSendEvt);
 	
 	return 0;         
 }
@@ -430,21 +499,19 @@ int main(int argc, char *argv[])
 	SOCKADDR_IN clientAddr;
 	int addrlen;
 
-	HANDLE hProccessClient[2];	// 클라이언트 처리 스레드 핸들
-	HANDLE hCalculateThread;	// 연산 스레드 핸들
+	HANDLE hRecvAndUpdateInfo[2];	// 클라이언트 처리 스레드 핸들
+	HANDLE hUpdatePackAndSend;	// 연산 스레드 핸들
 
-	hCalculateThread = CreateThread(NULL, 0, CalculateThread, NULL, 0, NULL); // hCalculateThread 생성
+	hUpdatePackAndSend = CreateThread(NULL, 0, UpdatePackAndSend, NULL, 0, NULL); // UpdatePackAndSend 생성 (이전 hCalculateThread)
 
 	// 두 개의 자동 리셋 이벤트 객체 생성(데이터 수신 이벤트, 갱신 이벤트)
-	hRecvEvt = CreateEvent(NULL, FALSE, FALSE, NULL);	// 비신호 상태(바로 시작o)
-	if (hRecvEvt == NULL) return 1;
-	hUpdateEvt = CreateEvent(NULL, FALSE, TRUE, NULL);	// 신호 상태(바로 시작x)
-	if (hUpdateEvt == NULL) return 1;
+	hUpdateInfoEvt = CreateEvent(NULL, FALSE, FALSE, NULL);	// 비신호 상태(바로 시작o)
+	if (hUpdateInfoEvt == NULL) return 1;
+	hSendEvt = CreateEvent(NULL, FALSE, TRUE, NULL);	// 신호 상태(바로 시작x)
+	if (hSendEvt == NULL) return 1;
 	
 	// 구조체 초기화
 	Init();
-
-	//UpdateValues();
 
 	// 테스트트트트트트트
 	printf("보낼 패킷 사이즈 : %zd\n", sizeof(StoCPacket));
@@ -461,13 +528,13 @@ int main(int argc, char *argv[])
 				break;
 			}
 	
-			// hProccessClient 생성
-			hProccessClient[info.connectedP] = CreateThread(NULL, 0, ProccessClient, (LPVOID)clientSock, 0, NULL);
-			if (hProccessClient[info.connectedP] == NULL) { 
+			// hRecvAndUpdateInfo 생성 (이전 hProccessClient)
+			hRecvAndUpdateInfo[info.connectedP] = CreateThread(NULL, 0, RecvAndUpdateInfo, (LPVOID)clientSock, 0, NULL);
+			if (hRecvAndUpdateInfo[info.connectedP] == NULL) {
 				closesocket(clientSock);
 			}
 			else { 
-				CloseHandle(hProccessClient[info.connectedP]);		//★ 스레드 핸들값을 바로 삭제할지도 논의 필요
+				CloseHandle(hRecvAndUpdateInfo[info.connectedP]);		//★ 스레드 핸들값을 바로 삭제할지도 논의 필요
 			}
 	
 			//★ 접속한 클라이언트 정보 출력(테스트용)

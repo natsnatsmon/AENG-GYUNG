@@ -64,7 +64,7 @@ ScnMgr::~ScnMgr()
 extern CInfo info;
 extern StoCPacket *sTcPacket;
 extern CtoSPacket *cTsPacket;
-extern CItemObj *item[MAX_ITEMS];
+//extern CItemObj *item[MAX_ITEMS];
 
 void ScnMgr::RenderScene()
 {
@@ -94,18 +94,18 @@ void ScnMgr::RenderScene()
 			g_Seq = 0;
 
 		for (int playerID = 0; playerID < MAX_PLAYERS; ++playerID) {
-			m_Renderer->DrawTextureRectSeqXY(info.playerPos[playerID].x, info.playerPos[playerID].y, 1.f, R_PLAYER * 2, R_PLAYER * 2, 1, 1, 1, 1, m_PlayerTex[playerID], seqX, seqY, 4, 1);
+			m_Renderer->DrawTextureRectSeqXY(info.playersPos[playerID].x, info.playersPos[playerID].y, 1.f, R_PLAYER * 2, R_PLAYER * 2, 1, 1, 1, 1, m_PlayerTex[playerID], seqX, seqY, 4, 1);
 		}
 
 		// 아이템(사과 + 총알) 그리기
 		for (int itemNum = 0; itemNum < MAX_ITEMS; ++itemNum) {
-			if (item[itemNum]->isVisible == false)
+			if (info.items[itemNum]->isVisible == false)
 				continue;
 			else {
-				float itemPosX = item[itemNum]->pos.x;
-				float itemPosY = item[itemNum]->pos.y;
+				float itemPosX = info.items[itemNum]->pos.x;
+				float itemPosY = info.items[itemNum]->pos.y;
 
-				switch (item[itemNum]->playerID) {
+				switch (info.items[itemNum]->playerID) {
 				case nullPlayer: // 사과
 					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_ItemTex, 1, 1, 1, 1);
 					break;

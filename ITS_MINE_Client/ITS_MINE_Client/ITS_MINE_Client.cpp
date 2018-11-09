@@ -40,7 +40,7 @@ int g_Shoot = SHOOT_NONE;
 
 // 구조체들 선언
 CInfo info;
-CItemObj *item[MAX_ITEMS];
+//CItemObj *item[MAX_ITEMS];
 
 // 패킷 구조체 선언
 CtoSPacket *cTsPacket = new CtoSPacket;
@@ -50,11 +50,11 @@ void Init() {
 
 	// 아이템 구조체 초기화
 	for (int i = 0; i < MAX_ITEMS; ++i) {
-		item[i] = new CItemObj;
-		item[i]->pos.x = 0;
-		item[i]->pos.y = 0;
-		item[i]->playerID = nullPlayer;
-		item[i]->isVisible = false;
+		info.items[i] = new CItemObj;
+		info.items[i]->pos.x = 0;
+		info.items[i]->pos.y = 0;
+		info.items[i]->playerID = nullPlayer;
+		info.items[i]->isVisible = false;
 	}
 
 	// C -> S Packet 구조체 초기화
@@ -76,45 +76,48 @@ void Init() {
 	}
 
 	sTcPacket->time = 0;
-	sTcPacket->life = INIT_LIFE;
 	sTcPacket->gameState = MainState;
 
 	// 게임 정보 구조체 초기화
 	info.gameState = MainState;
 	info.gameTime = 0;
 	for (int i = 0; i < MAX_PLAYERS; ++i)
-		info.playerPos[i] = { 0, };
-	for (int i = 0; i < MAX_ITEMS; ++i)
-		info.item[i] = { {0, 0}, 0, nullPlayer };
+		info.playersPos[i] = { 0, };
+	for (int i = 0; i < MAX_ITEMS; ++i) {
+		info.items[i]->pos = { 0, 0 };
+		info.items[i]->isVisible = 0;
+		info.items[i]->playerID = nullPlayer;
+	}
 	
 
-
-	// Test용!!!
+	// 테스트용!!!
 	info.gameState = GamePlayState;
 
-	info.playerPos[0] = { 0.f, 10.f };
-	info.playerPos[1] = { 22.f, -38.f };
+	info.playersPos[0].x = 0.f; 
+	info.playersPos[0].y = 10.f;
+	info.playersPos[1].x = 22.f;
+	info.playersPos[1].y = -38.f;
 
-	item[0]->pos.x = 30.f;
-	item[0]->pos.y = 20.f;
-	item[0]->playerID = nullPlayer;
-	item[0]->isVisible = true;
 
-	item[1]->pos.x = -70.f;
-	item[1]->pos.y = -72.f;
-	item[1]->playerID = player1;
-	item[1]->isVisible = true;
+	info.items[0]->pos.x = 30.f;
+	info.items[0]->pos.y = 20.f;
+	info.items[0]->playerID = nullPlayer;
+	info.items[0]->isVisible = true;
 
-	item[2]->pos.x = 143.f;
-	item[2]->pos.y = 153.f;
-	item[2]->playerID = player2;
-	item[2]->isVisible = true;
+	info.items[1]->pos.x = -70.f;
+	info.items[1]->pos.y = -72.f;
+	info.items[1]->playerID = player1;
+	info.items[1]->isVisible = true;
 
-	item[3]->pos.x = -111.f;
-	item[3]->pos.y = 111.f;
-	item[3]->playerID = nullPlayer;
-	item[3]->isVisible = true;
+	info.items[2]->pos.x = 143.f;
+	info.items[2]->pos.y = 153.f;
+	info.items[2]->playerID = player2;
+	info.items[2]->isVisible = true;
 
+	info.items[3]->pos.x = -111.f;
+	info.items[3]->pos.y = 111.f;
+	info.items[3]->playerID = nullPlayer;
+	info.items[3]->isVisible = true;
 }
 
 
@@ -167,6 +170,33 @@ void err_display(const char *msg)
 	LocalFree(lpMsgBuf);
 }
 
+void SendToServer(SOCKET s) {
+	std::cout << "SendToServer() 호출" << std::endl;
+
+	int retVal;
+	// 데이터 통신에 사용할 변수
+	char buf[SIZE_CToSPACKET];
+
+	// 임의의 값 대입(테스트)
+	cTsPacket->keyDown[W] = false;
+	cTsPacket->keyDown[A] = true;
+	cTsPacket->keyDown[S] = true;
+	cTsPacket->keyDown[D] = false;
+	cTsPacket->life = 3;
+
+
+	// 통신 버퍼에 패킷 메모리 복사
+	memcpy(buf, cTsPacket, SIZE_CToSPACKET);
+
+	// 전송(송신버퍼에 복사)
+	retVal = send(sock, buf, sizeof(CtoSPacket), 0);
+	if (retVal == SOCKET_ERROR)
+	{
+		err_display("send()");
+		exit(1);
+	}
+}
+
 void RenderScene(void)
 {
 	int retval;
@@ -211,6 +241,10 @@ void KeyDownInput(unsigned char key, int x, int y)
 			err_quit("connect()");
 		else {
 			cout << "connect() 완료!\n";
+
+			// 만약 connect()가 성공했다면~(테스트)
+			SendToServer(sock);
+
 			info.gameState = LobbyState;
 			cout << info.gameState;
 		}
@@ -252,28 +286,7 @@ void KeyUpInput(unsigned char key, int x, int y)
 		cTsPacket->keyDown[D] = false;
 	}
 }
-<<<<<<< HEAD
-=======
 
-void SpecialKeyInput(int key, int x, int y)
-{
-	switch (key)
-	{
-	case GLUT_KEY_UP:
-		g_Shoot = SHOOT_UP;
-		break;
-	case GLUT_KEY_DOWN:
-		g_Shoot = SHOOT_DOWN;
-		break;
-	case GLUT_KEY_RIGHT:
-		g_Shoot = SHOOT_RIGHT;
-		break;
-	case GLUT_KEY_LEFT:
-		g_Shoot = SHOOT_LEFT;
-		break;
-	}
-}
->>>>>>> 1f2da86bbb5314126c636ec49964d16cbb6d46f4
 
 // ★ 총을 쏘는게 없으니 없애도 되지 않을까요? 논의 필요
 //void SpecialKeyInput(int key, int x, int y)
@@ -299,44 +312,19 @@ void SpecialKeyInput(int key, int x, int y)
 //	g_Shoot = SHOOT_NONE;
 //}
 
-void SendToServer(SOCKET s) {
-	std::cout << "SendToServer() 호출" << std::endl;
 
-	int retVal;
-	// ★ 테스트용 데이터 통신에 사용할 변수
-	char buf[SIZE_CToSPACKET];
 
-	// 보내려는 버퍼에 값 대입
-	buf[W] = cTsPacket->keyDown[W];
-	buf[A] = cTsPacket->keyDown[A];
-	buf[S] = cTsPacket->keyDown[S];
-	buf[D] = cTsPacket->keyDown[D];
 
-	// 전송(송신버퍼에 복사)
-	retVal = send(sock, buf, sizeof(CtoSPacket), 0);
-	if (retVal == SOCKET_ERROR)
-	{
-		err_display("send()");
-		exit(1);
+void DeleteAll()
+{
+	delete cTsPacket;
+	delete sTcPacket;
+
+	for (int i = 0; i < MAX_ITEMS; ++i) {
+		delete info.items[i];
 	}
 }
 
-// ★ 누가 Delete점 만들어주세요
-//void DeleteAll()
-//{
-//	delete cTsPacket;
-//	delete sTcPacket;
-//
-//
-//
-//	for (int i = 0; i < MAX_PLAYERS; ++i) {
-//		delete info.playerPos;
-//	}
-//
-//	for (int i = 0; i < MAX_ITEMS; ++i) {
-//		delete info.item;
-//	}
-//}
 
 int main(int argc, char **argv)
 {
@@ -385,26 +373,12 @@ int main(int argc, char **argv)
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
 	serveraddr.sin_port = htons(SERVERPORT);
-<<<<<<< HEAD
-=======
-	retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
-	if (retval == SOCKET_ERROR)
-		err_quit("connect()");
-	else
-		std::cout << "connect() 완료!\n";
->>>>>>> 1f2da86bbb5314126c636ec49964d16cbb6d46f4
 
-	// 만약 connect()가 성공했다면~
-	//SendToServer(sock);
-
-<<<<<<< HEAD
 	g_ScnMgr = new ScnMgr();
-=======
-	// 임시 데이터 전송(테스트)
-	SendToServer(sock);
->>>>>>> 1f2da86bbb5314126c636ec49964d16cbb6d46f4
 
 	glutMainLoop();		//메인 루프 함수
+
+
 	delete g_ScnMgr;
 
 	// closesocket()

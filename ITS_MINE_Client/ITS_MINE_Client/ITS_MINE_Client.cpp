@@ -42,6 +42,7 @@ int g_Shoot = SHOOT_NONE;
 CInfo info;
 CItemObj *item[MAX_ITEMS];
 
+// 패킷 구조체 선언
 CtoSPacket *cTsPacket = new CtoSPacket;
 StoCPacket *sTcPacket = new StoCPacket;
 

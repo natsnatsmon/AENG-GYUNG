@@ -14,6 +14,9 @@ HANDLE hUpdateEvt;		// 연산 및 갱신 이벤트 객체
 // 서버 구동에 사용할 변수(게임 관련 정보)
 SInfo info;
 
+// 이전 시간 저장 변수
+DWORD g_PrevTime = 0;
+
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char *msg)
 {
@@ -63,17 +66,6 @@ void Init() {
 		for (int j = 0; j < 4; ++j)
 			info.p[i]->keyDown[j] = false;
 	}
-
-	/*printf("[info 초기화 후]\n");
-	for (int i = 0; i < MAX_PLAYERS; ++i) {
-		printf("[player %d]\n", i);
-		printf("state: %d\n", info.p[i]->gameState);
-		printf("life: %d\n", info.p[i]->life);
-		printf("pos: %f, %f\n", info.p[i]->pos.x, info.p[i]->pos.y);
-		for (int j = 0; j < 4; ++j)
-			printf("%d ", info.p[i]->keyDown[j]);
-		printf("\n\n");
-	}*/
 
 	// 게임 정보 구조체 내의 아이템 구조체 정보 초기화
 	for (int i = 0; i < MAX_ITEMS; ++i) {
@@ -155,7 +147,6 @@ void RecvFromClient(SOCKET client_sock, short PlayerID)
 	addrLen = sizeof(clientAddr);
 	getpeername(sock, (SOCKADDR *)&clientAddr, &addrLen);
 
-
 	// 테스트 수신
 	char buf[SIZE_CToSPACKET+1];
 
@@ -236,7 +227,6 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 	// 클라한테 데이터 보내기
 
 
-
 	// closesocket()	★ closesocket()하려면 우리가 정의한 데이터 송.수신 함수 인자로 arg말고 socket 넘겨주는게 나을 듯..
 	closesocket(client_sock);
 	//★ 소멸 시 출력(테스트용)
@@ -248,14 +238,112 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 
 void UpdatePosition() {
 
-	BOOL tempKeyDown[4] = { cTsPacket->keyDown[0], cTsPacket->keyDown[1], cTsPacket->keyDown[2], cTsPacket->keyDown[3] };
+	BOOL tempKeyDown[4] = { cTsPacket->keyDown[W], cTsPacket->keyDown[A], cTsPacket->keyDown[S], cTsPacket->keyDown[D] };
+
+	// 내 위치 계산 및 대입
 	
-	// 계산
+	// elapsed time 계산
+	if (g_PrevTime == 0)	// g_PrevTime은 0이고 currTime은 시작부터 시간을 재고 있기때문에 처음 elapsedTime을 구할 때 차이가 너무 많아 나버릴 수 있다.
+	{
+		g_PrevTime = GetTickCount();
+		return;
+	}
+	DWORD currTime = GetTickCount();		// current time in millisec
+	DWORD elapsedTime = currTime - g_PrevTime;
+	g_PrevTime = currTime;
+	float eTime = (float)elapsedTime / 1000.f;		// ms to s
+
+	// 힘 적용
+	float forceX = 0.f;
+	float forceY = 0.f;
+	float amount = 4.f;
+	if (cTsPacket->keyDown[W])
+	{
+		forceY += amount;
+	}	
+	if (cTsPacket->keyDown[A])
+	{
+		forceX -= amount;
+	}
+	if (cTsPacket->keyDown[S])
+	{
+		forceY -= amount;
+	}
+	if (cTsPacket->keyDown[D])
+	{
+		forceX += amount;
+	}
+	
+	// Apply Force
+	float Accel_x, Accel_y;
+	float Vel_x, Vel_y;
+	// calc accel
+	Accel_x = forceX / MASS;
+	Accel_y = forceY / MASS;
+
+	// calc vel
+	Vel_x = Vel_x + Accel_x * eTime;
+	Vel_y = Vel_y + Accel_y * eTime;
+
+	// 0.f으로 set 해주지않으면 계속 빨라진다!
+	Accel_x = 0.f;
+	Accel_y = 0.f;
+
+	// calc friction(마찰력) 계산
+	// 정규화 과정 (벡터 방향을 그대로 두지만 크기가 1인 단위벡터로 바꾸는 과정)
+	float magVel = sqrtf(Vel_x * Vel_x + Vel_y * Vel_y);
+	float velX = Vel_x / magVel;
+	float velY = Vel_y / magVel;
+
+	// 마찰력이 작용하는 방향도 구함(힘의 반대방향이므로)
+	float fricX = -velX;
+	float fricY = -velY;
+
+	// 마찰력의 크기
+	float friction = COEF_FRICT * MASS * GRAVITY; // 마찰력 = 마찰계수 * m(질량) * g(중력)
+
+	// 마찰력 방향 * 마찰력 크기
+	fricX *= friction;
+	fricY *= friction;
+
+	if (magVel < FLT_EPSILON)
+	{
+		Vel_x = 0.f;
+		Vel_y = 0.f;
+	}
+	else
+	{
+		float accX = fricX / MASS;
+		float accY = fricY / MASS;
+
+		float afterVelX = Vel_x + accX * eTime;
+		float afterVelY = Vel_y + accY * eTime;
+
+		if (afterVelX * Vel_x < 0.f)
+			Vel_x = 0.f;
+		else
+			Vel_x = afterVelX;
+
+		if (afterVelY * Vel_y < 0.f)
+			Vel_y = 0.f;
+		else
+			Vel_y = afterVelY;
+	}
+
+	//calc velocity
+	Vel_x = Vel_x + Accel_x * eTime;
+	Vel_y = Vel_y + Accel_y * eTime;
+
+	// calc pos
+	info.p[playerID]->pos.x = info.p[playerID]->pos.x + Vel_x * eTime;
+	info.p[playerID]->pos.y = info.p[playerID]->pos.y + Vel_y * eTime;
 
 
-	// 내 위치, 상대방 위치(다른 스레드에서 위치값을 알아와야 함), 아이템 위치 계산
-
-
+	// 상대방 위치(다른 스레드에서 위치값을 알아와야 함) 대입
+	
+	
+	
+	// 아이템 위치 계산 및 대입(종원)
 
 
 }
@@ -269,9 +357,13 @@ void CollisionCheck()
 // 하연
 bool GameEndCheck()
 {
+	// 게임 종료: true 반환
+	// 게임 미종료: false 반환
+
 	// LifeCheck 작성
 
 	// 목숨이 0이라면 gameState를 변경하기 
+
 	return false;
 }
 

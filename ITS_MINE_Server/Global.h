@@ -15,6 +15,14 @@
 #define INIT_POS -100.f
 #define INIT_LIFE 5
 
+#define W 0
+#define A 1
+#define S 2
+#define D 3
+
+#define MASS 0.4f
+#define COEF_FRICT 0.5f
+#define GRAVITY 9.8f
 
 //★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
 enum gameState {

@@ -44,7 +44,7 @@ struct SPlayer {
 	short gameState; 	// 게임 상태를 나타내는 변수
 
 	Vec pos;			// 플레이어 위치
-	BOOL keyDown[4];	// 클라이언트 키 입력 배열
+	bool keyDown[4];	// 클라이언트 키 입력 배열
 	short life;			// 플레이어 생명
 };
 
@@ -54,7 +54,7 @@ struct SItemObj {
 	Vec direction;		// 아이템 발사 방향
 	float velocity;		// 아이템 속도
 	short playerID;		// 아이템을 먹은 플레이어의 아이디
-	BOOL isVisible;		// 화면 표시 여부
+	bool isVisible;		// 화면 표시 여부
 };
 
 // 게임 정보 구조체

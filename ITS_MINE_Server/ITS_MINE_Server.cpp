@@ -45,8 +45,6 @@ void err_display(const char *msg)
 }
 
 // 플레이어, 아이템 구조체
-//SPlayer *players[MAX_PLAYERS];
-//SItemObj *item[MAX_ITEMS];
 CtoSPacket *cTsPacket = new CtoSPacket;
 StoCPacket *sTcPacket = new StoCPacket;
 
@@ -59,7 +57,7 @@ void Init() {
 	// 게임 정보 구조체 내의 플레이어 구조체 정보 초기화
 	for (int i = 0; i < MAX_PLAYERS; ++i) {
 		info.p[i] = new SPlayer;
-		info.p[i]->gameState = MainState;
+		info.p[i]->gameState = LobbyState;
 		info.p[i]->pos.x = INIT_POS;
 		info.p[i]->pos.y = INIT_POS;
 		info.p[i]->life = INIT_LIFE;
@@ -93,7 +91,6 @@ void Init() {
 
 	// 아이템은 아직 초기화 안함
 	sTcPacket->time = 0;
-	sTcPacket->life = INIT_LIFE;
 	sTcPacket->gameState = LobbyState;
 
 }
@@ -204,6 +201,7 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 
 	// 이 곳에 recv 이벤트 신호 해주기
 	SetEvent(hRecvEvt);
+
 	// 바로 다음 줄에 waitfor() 작성
 	WaitForSingleObject(hUpdateEvt, INFINITE);
 
@@ -226,7 +224,6 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 	}
 
 
-
 	// 받는 이벤트 기다린다.....
 
 	// 클라한테 데이터 보내기
@@ -246,7 +243,6 @@ void UpdatePosition() {
 	BOOL tempKeyDown[4] = { cTsPacket->keyDown[W], cTsPacket->keyDown[A], cTsPacket->keyDown[S], cTsPacket->keyDown[D] };
 
 	// 내 위치 계산 및 대입
-	
 	// elapsed time 계산
 	if (g_PrevTime == 0)	// g_PrevTime은 0이고 currTime은 시작부터 시간을 재고 있기때문에 처음 elapsedTime을 구할 때 차이가 너무 많아 나버릴 수 있다.
 	{
@@ -339,12 +335,12 @@ void UpdatePosition() {
 	Vel_x = Vel_x + Accel_x * eTime;
 	Vel_y = Vel_y + Accel_y * eTime;
 
-	// calc pos
-	info.p[playerID]->pos.x = info.p[playerID]->pos.x + Vel_x * eTime;
-	info.p[playerID]->pos.y = info.p[playerID]->pos.y + Vel_y * eTime;
+	//// calc pos
+	//info.p[playerID]->pos.x = info.p[playerID]->pos.x + Vel_x * eTime;
+	//info.p[playerID]->pos.y = info.p[playerID]->pos.y + Vel_y * eTime;
 
 
-	// 상대방 위치(다른 스레드에서 위치값을 알아와야 함) 대입
+	// 상대방 위치(다른 스레드에서 상대 위치값을 알아와야 함) 대입
 	
 	
 	
@@ -428,7 +424,6 @@ int main(int argc, char *argv[])
 	// listen()
 	retval = listen(listen_sock, SOMAXCONN);
 	if (retval == SOCKET_ERROR) err_quit("listen()");
-
 
 	// 데이터 통신에 사용할 변수
 	SOCKET clientSock;

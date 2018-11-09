@@ -1,9 +1,9 @@
 #pragma once
 
 #define SERVERPORT 8888
-//#define BUFSIZE 1024		//★ 임시 버퍼사이즈이기 때문에 논의 및 수정 필요
-#define SIZE_CToSPACKET 4
-#define SIZE_StoCPACKET 1124
+
+#define SIZE_CToSPACKET 6
+#define SIZE_StoCPACKET 1122
 
 #define MAX_PLAYERS 2
 #define MAX_ITEMS 100
@@ -70,6 +70,7 @@ struct SInfo {
 #pragma pack(1)
 struct CtoSPacket {
 	bool keyDown[4];
+	short life;
 };
 #pragma pack()
 
@@ -78,8 +79,6 @@ struct CtoSPacket {
 struct StoCPacket {
 	short gameState;
 	DWORD time;
-
-	short life;
 
 	Vec p1Pos;
 	Vec p2Pos;
@@ -91,7 +90,6 @@ struct StoCPacket {
 #pragma pack()
 
 /*
-
 		// 데이터 받기
 		retVal = recvn(client_sock, buf, sizeof(StoCPacket), 0);
 		if (retVal == SOCKET_ERROR) {
@@ -111,6 +109,4 @@ struct StoCPacket {
 		for (int j = 0; j < 4; ++j)
 			printf("%d ", cTsPacket->keyDown[j]);
 	}
-
-
 */

@@ -71,8 +71,6 @@ void Init() {
 	sTcPacket->life = INIT_LIFE;
 	sTcPacket->gameState = MainState;
 
-
-
 	// 게임 정보 구조체 초기화
 	info.gameState = MainState;
 	info.gameTime = 0;
@@ -165,7 +163,6 @@ void MouseInput(int button, int state, int x, int y)
 	RenderScene();
 }
 
-
 void KeyDownInput(unsigned char key, int x, int y)
 {
 	if (key == 'w' || key == 'W')
@@ -204,6 +201,7 @@ void KeyUpInput(unsigned char key, int x, int y)
 		cTsPacket->keyDown[D] = false;
 	}
 }
+
 void SpecialKeyInput(int key, int x, int y)
 {
 	switch (key)
@@ -229,12 +227,11 @@ void SpecialKeyUpInput(int key, int x, int y)
 }
 
 void SendToServer(SOCKET s) {
-	cout << "SendToServer() 호출\n";
+	std::cout << "SendToServer() 호출" << std::endl;
 
 	int retVal;
 	// ★ 테스트용 데이터 통신에 사용할 변수
 	char buf[SIZE_CToSPACKET];
-
 
 	// 보내려는 버퍼에 값 대입
 	buf[W] = cTsPacket->keyDown[W];
@@ -249,8 +246,6 @@ void SendToServer(SOCKET s) {
 		err_display("send()");
 		exit(1);
 	}
-	else
-		cout << "다보냄!!!" << endl;
 }
 
 int main(int argc, char **argv)
@@ -301,13 +296,14 @@ int main(int argc, char **argv)
 	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
 	serveraddr.sin_port = htons(SERVERPORT);
 	retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
-	if (retval == SOCKET_ERROR) 
+	if (retval == SOCKET_ERROR)
 		err_quit("connect()");
 	else
-		cout << "connect() 완료!\n";
+		std::cout << "connect() 완료!\n";
 
 	g_ScnMgr = new ScnMgr();
 
+	// 임시 데이터 전송(테스트)
 	SendToServer(sock);
 
 	glutMainLoop();		//메인 루프 함수
@@ -319,6 +315,5 @@ int main(int argc, char **argv)
 	// 윈속 종료
 	WSACleanup();
 
-    return 0;
+	return 0;
 }
-

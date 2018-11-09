@@ -26,7 +26,7 @@
 
 //★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
 enum gameState {
-	MainState, LobbyState, GamePlayState, GameOverState
+	LobbyState, GamePlayState, GameOverState
 };
 
 //★ 플레이어 수는 임시로 4까지 해놓음. 끝날때까지도 2명만 쓰면 define으로 바꿈

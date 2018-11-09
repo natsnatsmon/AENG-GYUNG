@@ -94,7 +94,7 @@ void Init() {
 	// 아이템은 아직 초기화 안함
 	sTcPacket->time = 0;
 	sTcPacket->life = INIT_LIFE;
-	sTcPacket->gameState = MainState;
+	sTcPacket->gameState = LobbyState;
 
 }
 
@@ -167,10 +167,10 @@ void RecvFromClient(SOCKET client_sock, short PlayerID)
 		cTsPacket = (CtoSPacket*)buf;
 
 		// 받은 데이터 출력 (테스트)
-		std::cout << "\nw: "<< cTsPacket->keyDown[0] << " " 
-			<< "a: " << cTsPacket->keyDown[1] << " "
-			<< "s: " << cTsPacket->keyDown[2] << " "
-			<< "d: " << cTsPacket->keyDown[3] << std::endl;
+		std::cout << "\nw: "<< cTsPacket->keyDown[W] << " " 
+			<< "a: " << cTsPacket->keyDown[A] << " "
+			<< "s: " << cTsPacket->keyDown[S] << " "
+			<< "d: " << cTsPacket->keyDown[D] << std::endl;
 		std::cout << "[TCP 서버] " << info.connectedP << "번 클라이언트에서 받음"
 			<< "( IP 주소 = " << inet_ntoa(clientAddr.sin_addr)
 			<< ", 포트 번호 = " << ntohs(clientAddr.sin_port) << " )"
@@ -203,16 +203,21 @@ DWORD WINAPI ProccessClient(LPVOID arg)
 	RecvFromClient(client_sock, playerID);
 
 	// 이 곳에 recv 이벤트 신호 해주기
+	SetEvent(hRecvEvt);
 	// 바로 다음 줄에 waitfor() 작성
+	WaitForSingleObject(hUpdateEvt, INFINITE);
 
 	switch (info.p[playerID]->gameState) {
 	case LobbyState:
+		// 로비에서는 gamestate가 변경되었을때만 gamestate 정보를 보내면 된당
 		break;
 
 	case GamePlayState:
+		// 이때는 패킷내용 다 필요하고
 		break;
 
 	case GameOverState:
+		// 이때에는 뭐 받아야댐??
 		break;
 
 	default:
@@ -361,8 +366,17 @@ bool GameEndCheck()
 	// 게임 미종료: false 반환
 
 	// LifeCheck 작성
+	for (int playerID = 0; playerID < MAX_PLAYERS; ++playerID) {
+		if (info.p[playerID]->life <= 0) {
+			sTcPacket->gameState = GameOverState;
+			return true;
+		}
+		else 
+			continue;
+	}
 
-	// 목숨이 0이라면 gameState를 변경하기 
+	// TimeCheck 작성
+	
 
 	return false;
 }
@@ -376,6 +390,7 @@ DWORD WINAPI CalculateThread(LPVOID arg)
 
 	// "데이터 다 받음" 이벤트 신호 체크(waitfor())
 	//   이 곳에 작성해야함.
+	WaitForSingleObject(hRecvEvt, INFINITE);
 
 	// 충돌로 인한 내 생명, 아이템 먹은 플레이어ID, 아이템 표시 여부 계산하여 sTcPacket에 각 각 대입
 	CollisionCheck();	// ★ 종원

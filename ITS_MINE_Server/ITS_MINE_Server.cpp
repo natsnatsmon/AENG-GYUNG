@@ -1,3 +1,4 @@
+//
 // [ 서버 알고리즘 ]
 // RecvAndUpdateInfo에서 데이터를 받아서 충돌체크 및 포지션 갱신 후 대기(hSendEvt 신호 대기)
 // -> UpdatePackAndSend에서 갱신된 데이터들을 패킷구조체에 저장한 후 패킷 전송 후 SetEvent하고 대기(hUpdateInfoEvt 신호 대기)
@@ -255,8 +256,8 @@ void UpdatePosition(short playerID) {
 	float forceY = 0.f;
 	float amount = 4.f;
 
-	float Accel_x, Accel_y;
-	float Vel_x, Vel_y;
+	float Accel_x = 0.f, Accel_y = 0.f;
+	float Vel_x = 0.f, Vel_y = 0.f;
 	
 
 	if (tempKeyDown[W])

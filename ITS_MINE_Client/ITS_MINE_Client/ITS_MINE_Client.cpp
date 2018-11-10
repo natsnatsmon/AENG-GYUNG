@@ -60,6 +60,7 @@ void Init() {
 	// C -> S Packet 구조체 초기화
 	for (int i = 0; i < 4; ++i)
 		cTsPacket->keyDown[i] = false;
+	cTsPacket->life = 5;
 
 	// S -> C Packet 구조체 초기화
 	sTcPacket->p1Pos.x = INIT_POS;
@@ -91,7 +92,7 @@ void Init() {
 	
 
 	// 테스트용!!!
-	info.gameState = GamePlayState;
+	info.gameState = MainState;
 
 	info.playersPos[0].x = 0.f; 
 	info.playersPos[0].y = 10.f;
@@ -178,11 +179,11 @@ void SendToServer(SOCKET s) {
 	char buf[SIZE_CToSPACKET];
 
 	// 임의의 값 대입(테스트)
-	cTsPacket->keyDown[W] = false;
-	cTsPacket->keyDown[A] = true;
-	cTsPacket->keyDown[S] = true;
-	cTsPacket->keyDown[D] = false;
-	cTsPacket->life = 3;
+//	cTsPacket->keyDown[W] = false;
+//	cTsPacket->keyDown[A] = true;
+//	cTsPacket->keyDown[S] = true;
+//	cTsPacket->keyDown[D] = false;
+//	cTsPacket->life = 3;
 
 
 	// 통신 버퍼에 패킷 메모리 복사
@@ -199,7 +200,11 @@ void SendToServer(SOCKET s) {
 
 void RenderScene(void)
 {
-	int retval;
+	if (info.gameState == GamePlayState || info.gameState == LobbyState) {
+		SendToServer(sock);
+	}
+
+
 	if (g_PrevTime == 0)
 	{
 		g_PrevTime = GetTickCount();
@@ -210,16 +215,16 @@ void RenderScene(void)
 	g_PrevTime = CurrTime;
 	float eTime = (float)ElapsedTime / 1000.0f;
 
-	/*retval = send(sock, (char*)cTsPacket, sizeof(cTsPacket), 0);
-	if (retval == SOCKET_ERROR)
-	{
-		err_display("send()");
-		exit(1);
-	}*/
+
 
 	g_ScnMgr->RenderScene();
 
 	glutSwapBuffers();
+
+
+	// 이거 전송하는게 넘 빨라서 눈으로 안보여서 잠시 넣은거에여!!!
+	Sleep(20);
+
 }
 
 void Idle(void)
@@ -328,8 +333,6 @@ void DeleteAll()
 
 int main(int argc, char **argv)
 {
-	int retval;
-
 	// Initialize GL things
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
@@ -377,8 +380,6 @@ int main(int argc, char **argv)
 	g_ScnMgr = new ScnMgr();
 
 	glutMainLoop();		//메인 루프 함수
-
-
 	delete g_ScnMgr;
 
 	// closesocket()

@@ -38,7 +38,6 @@ ScnMgr::ScnMgr()
 		m_ResultUITex[playerID] = m_Renderer->CreatePngTexture(resultUITexFilePath);
 	}
 
-
 	m_ItemTex = m_Renderer->CreatePngTexture("./textures/item.png");
 	m_LifeTex = m_Renderer->CreatePngTexture("./textures/life.png");
 
@@ -64,7 +63,7 @@ ScnMgr::~ScnMgr()
 extern CInfo info;
 extern StoCPacket *sTcPacket;
 extern CtoSPacket *cTsPacket;
-//extern CItemObj *item[MAX_ITEMS];
+extern CItemObj *item[MAX_ITEMS];
 
 void ScnMgr::RenderScene()
 {

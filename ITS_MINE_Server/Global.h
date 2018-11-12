@@ -3,7 +3,7 @@
 #define SERVERPORT 8888
 
 #define SIZE_CToSPACKET 6
-#define SIZE_StoCPACKET 1122
+#define SIZE_SToCPACKET 1122
 
 #define MAX_PLAYERS 2
 #define MAX_ITEMS 100
@@ -88,25 +88,3 @@ struct StoCPacket {
 	bool isVisible[MAX_ITEMS];
 };
 #pragma pack()
-
-/*
-		// 데이터 받기
-		retVal = recvn(client_sock, buf, sizeof(StoCPacket), 0);
-		if (retVal == SOCKET_ERROR) {
-			err_display("recv()");
-			break;
-		}
-		else if (retVal == 0) { break; }
-
-
-		// 받은 데이터 서버 관리 패킷에 삽입
-		buf[retVal] = '\0';
-		cTsPacket = (CtoSPacket*)buf;
-
-		printf("[받은 데이터 확인]\n");
-		printf("life: %d\n", cTsPacket->life);
-		printf("posX: %f, posY: %f\n", cTsPacket->pos.x, cTsPacket->pos.y);
-		for (int j = 0; j < 4; ++j)
-			printf("%d ", cTsPacket->keyDown[j]);
-	}
-*/

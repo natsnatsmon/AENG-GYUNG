@@ -8,7 +8,7 @@
 #define SERVERPORT 8888
 
 #define SIZE_CToSPACKET 6
-#define SIZE_StoCPACKET 1122
+#define SIZE_SToCPACKET 1122
 
 #define HERO_ID	0 
 

@@ -142,6 +142,34 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 void RecvFromServer(SOCKET sock) {
 
+	int retVal = 0;
+
+	// 테스트 수신
+	char buf[SIZE_SToCPACKET + 1];
+
+	std::cout << "제대로 불리고 있습니까..? ";
+	//while (1) {
+	//	ZeroMemory(buf, sizeof(StoCPacket));
+
+	//	// 데이터 받기
+	//	retVal = recvn(sock, buf, sizeof(StoCPacket), 0);
+	//	if (retVal == SOCKET_ERROR) {
+	//		//			err_display("recv()");
+	//		break;
+	//	}
+	//	else if (retVal == 0) { break; }
+
+
+	//	// 받은 데이터 서버 관리 패킷에 삽입
+	//	buf[retVal] = '\0';
+	//	sTcPacket = (StoCPacket*)buf;
+
+	//	printf("[받은 데이터 확인]\n");
+	//	printf("gameState : %d\n", sTcPacket->gameState);
+	//	printf("posX : %f, posY : %f\n", sTcPacket->p1Pos.x, sTcPacket->p1Pos.y);
+	//}
+
+
 }
 
 // 소켓 함수 오류 출력 후 종료
@@ -172,19 +200,11 @@ void err_display(const char *msg)
 }
 
 void SendToServer(SOCKET s) {
-	std::cout << "SendToServer() 호출" << std::endl;
+	std::cout << "SendToServer() 호출\n";
 
 	int retVal;
 	// 데이터 통신에 사용할 변수
 	char buf[SIZE_CToSPACKET];
-
-	// 임의의 값 대입(테스트)
-//	cTsPacket->keyDown[W] = false;
-//	cTsPacket->keyDown[A] = true;
-//	cTsPacket->keyDown[S] = true;
-//	cTsPacket->keyDown[D] = false;
-//	cTsPacket->life = 3;
-
 
 	// 통신 버퍼에 패킷 메모리 복사
 	memcpy(buf, cTsPacket, SIZE_CToSPACKET);
@@ -201,7 +221,10 @@ void SendToServer(SOCKET s) {
 void RenderScene(void)
 {
 	if (info.gameState == GamePlayState || info.gameState == LobbyState) {
+		Sleep(200);
+
 		SendToServer(sock);
+		//RecvFromServer(sock);
 	}
 
 
@@ -223,7 +246,6 @@ void RenderScene(void)
 
 
 	// 이거 전송하는게 넘 빨라서 눈으로 안보여서 잠시 넣은거에여!!!
-	Sleep(20);
 
 }
 

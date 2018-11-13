@@ -46,6 +46,52 @@ CInfo info;
 CtoSPacket *cTsPacket = new CtoSPacket;
 StoCPacket *sTcPacket = new StoCPacket;
 
+// 소켓 함수 오류 출력 후 종료
+void err_quit(const char *msg)
+{
+	LPVOID lpMsgBuf;
+	FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+		NULL, WSAGetLastError(),
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&lpMsgBuf, 0, NULL);
+	MessageBox(NULL, (LPCTSTR)lpMsgBuf, msg, MB_ICONERROR);
+	LocalFree(lpMsgBuf);
+	exit(1);
+}
+
+// 소켓 함수 오류 출력
+void err_display(const char *msg)
+{
+	LPVOID lpMsgBuf;
+	FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+		NULL, WSAGetLastError(),
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&lpMsgBuf, 0, NULL);
+	printf("[%s] %s", msg, (char *)lpMsgBuf);
+	LocalFree(lpMsgBuf);
+}
+
+int recvn(SOCKET s, char *buf, int len, int flags)
+{
+	int received;
+	char *ptr = buf;
+	int left = len;
+	while (left > 0)
+	{
+		received = recv(s, ptr, left, flags);
+		if (received == SOCKET_ERROR)
+			return SOCKET_ERROR;
+		else if (received == 0)
+			break;
+		left -= received;
+		ptr += received;
+	}
+	return (len - left);
+}
+
+
 void Init() {
 
 	// 아이템 구조체 초기화
@@ -122,85 +168,31 @@ void Init() {
 }
 
 
-int recvn(SOCKET s, char *buf, int len, int flags)
-{
-	int received;
-	char *ptr = buf;
-	int left = len;
-	while (left > 0)
-	{
-		received = recv(s, ptr, left, flags);
-		if (received == SOCKET_ERROR)
-			return SOCKET_ERROR;
-		else if (received == 0)
-			break;
-		left -= received;
-		ptr += received;
-	}
-	return (len - left);
-}
+void RecvFromServer(SOCKET s) {
 
-void RecvFromServer(SOCKET sock) {
+	int retVal;
 
-	int retVal = 0;
-
-	// 테스트 수신
+	// 데이터 통신에 사용할 변수
 	char buf[SIZE_SToCPACKET + 1];
+	ZeroMemory(buf, SIZE_SToCPACKET);
 
-	std::cout << "제대로 불리고 있습니까..? ";
-	//while (1) {
-	//	ZeroMemory(buf, sizeof(StoCPacket));
-
-	//	// 데이터 받기
-	//	retVal = recvn(sock, buf, sizeof(StoCPacket), 0);
-	//	if (retVal == SOCKET_ERROR) {
-	//		//			err_display("recv()");
-	//		break;
-	//	}
-	//	else if (retVal == 0) { break; }
+	// 데이터 받기
+	retVal = recvn(s, buf, SIZE_SToCPACKET, 0);
+	if (retVal == SOCKET_ERROR) {
+		err_display("recv()");
+	}
 
 
-	//	// 받은 데이터 서버 관리 패킷에 삽입
-	//	buf[retVal] = '\0';
-	//	sTcPacket = (StoCPacket*)buf;
+	// 받은 데이터 서버 관리 패킷에 삽입
+	buf[retVal] = '\0';
+	memcpy(sTcPacket, buf, SIZE_SToCPACKET);
 
-	//	printf("[받은 데이터 확인]\n");
-	//	printf("gameState : %d\n", sTcPacket->gameState);
-	//	printf("posX : %f, posY : %f\n", sTcPacket->p1Pos.x, sTcPacket->p1Pos.y);
-	//}
-
-
-}
-
-// 소켓 함수 오류 출력 후 종료
-void err_quit(const char *msg)
-{
-	LPVOID lpMsgBuf;
-	FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-		NULL, WSAGetLastError(),
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPTSTR)&lpMsgBuf, 0, NULL);
-	MessageBox(NULL, (LPCTSTR)lpMsgBuf, msg, MB_ICONERROR);
-	LocalFree(lpMsgBuf);
-	exit(1);
-}
-
-// 소켓 함수 오류 출력
-void err_display(const char *msg)
-{
-	LPVOID lpMsgBuf;
-	FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-		NULL, WSAGetLastError(),
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPTSTR)&lpMsgBuf, 0, NULL);
-	printf("[%s] %s", msg, (char *)lpMsgBuf);
-	LocalFree(lpMsgBuf);
+	std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
+		<< "좌표: " << sTcPacket->p1Pos.x << ", " << sTcPacket->p1Pos.y << std::endl;
 }
 
 void SendToServer(SOCKET s) {
-	std::cout << "SendToServer() 호출\n";
+	//std::cout << "SendToServer() 호출" << std::endl;
 
 	int retVal;
 	// 데이터 통신에 사용할 변수
@@ -210,23 +202,15 @@ void SendToServer(SOCKET s) {
 	memcpy(buf, cTsPacket, SIZE_CToSPACKET);
 
 	// 전송(송신버퍼에 복사)
-	retVal = send(sock, buf, sizeof(CtoSPacket), 0);
+	retVal = send(s, buf, sizeof(CtoSPacket), 0);
 	if (retVal == SOCKET_ERROR)
 	{
 		err_display("send()");
-		exit(1);
 	}
 }
 
 void RenderScene(void)
 {
-	if (info.gameState == GamePlayState || info.gameState == LobbyState) {
-		Sleep(200);
-
-		SendToServer(sock);
-		//RecvFromServer(sock);
-	}
-
 
 	if (g_PrevTime == 0)
 	{
@@ -237,7 +221,6 @@ void RenderScene(void)
 	DWORD ElapsedTime = CurrTime - g_PrevTime;
 	g_PrevTime = CurrTime;
 	float eTime = (float)ElapsedTime / 1000.0f;
-
 
 
 	g_ScnMgr->RenderScene();
@@ -294,6 +277,7 @@ void KeyDownInput(unsigned char key, int x, int y)
 		cTsPacket->keyDown[D] = true;
 	}
 }
+
 void KeyUpInput(unsigned char key, int x, int y)
 {
 	if (key == 'w' || key == 'W')
@@ -313,7 +297,6 @@ void KeyUpInput(unsigned char key, int x, int y)
 		cTsPacket->keyDown[D] = false;
 	}
 }
-
 
 // ★ 총을 쏘는게 없으니 없애도 되지 않을까요? 논의 필요
 //void SpecialKeyInput(int key, int x, int y)
@@ -339,9 +322,6 @@ void KeyUpInput(unsigned char key, int x, int y)
 //	g_Shoot = SHOOT_NONE;
 //}
 
-
-
-
 void DeleteAll()
 {
 	delete cTsPacket;
@@ -352,9 +332,44 @@ void DeleteAll()
 	}
 }
 
+DWORD WINAPI ProccessClient(LPVOID arg) {
+	printf("클라이언트 통신 스레드 생성\n");
+
+	// 윈속 초기화
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+		return 1;
+
+	// socket()
+	sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (sock == INVALID_SOCKET) err_quit("socket()");
+
+	// connect()
+	ZeroMemory(&serveraddr, sizeof(serveraddr));
+	serveraddr.sin_family = AF_INET;
+	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
+	serveraddr.sin_port = htons(SERVERPORT);
+
+	while (1)
+	{
+		if (info.gameState == GamePlayState || info.gameState == LobbyState) {
+			Sleep(200);
+			
+			// 데이터 송신
+			SendToServer(sock);
+
+			// 데이터 수신
+			RecvFromServer(sock);
+		}
+	}
+
+	return 0;
+}
 
 int main(int argc, char **argv)
 {
+	// 구조체 초기화
+	Init();
+
 	// Initialize GL things
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
@@ -380,28 +395,15 @@ int main(int argc, char **argv)
 	//glutSpecialFunc(SpecialKeyInput);
 	//glutSpecialUpFunc(SpecialKeyUpInput);
 
-
 	glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
 
-	Init();
-
-	// 윈속 초기화
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-		return 1;
-
-	// socket()
-	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock == INVALID_SOCKET) err_quit("socket()");
-
-	// connect()
-	ZeroMemory(&serveraddr, sizeof(serveraddr));
-	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
-	serveraddr.sin_port = htons(SERVERPORT);
+	// 소켓 통신 스레드 생성
+	CreateThread(NULL, 0, ProccessClient, NULL, 0, NULL);
 
 	g_ScnMgr = new ScnMgr();
 
 	glutMainLoop();		//메인 루프 함수
+	
 	delete g_ScnMgr;
 
 	// closesocket()

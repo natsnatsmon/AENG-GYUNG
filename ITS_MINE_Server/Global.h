@@ -9,8 +9,9 @@
 #define MAX_ITEMS 100
 #define MAX_POS 720
 
-#define R_PLAYER 40 // 플레이어 반지름
-#define R_ITEM 20 // 아이템 반지름
+#define HALF_WIDTH 450.f // 화면 반지름
+#define R_PLAYER 40.f // 플레이어 반지름
+#define R_ITEM 20.f // 아이템 반지름
 
 #define INIT_POS -100.f
 #define INIT_LIFE 5

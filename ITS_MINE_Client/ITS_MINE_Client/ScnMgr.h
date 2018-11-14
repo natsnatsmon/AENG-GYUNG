@@ -20,7 +20,7 @@ public:
 	//void DeleteObject(int id);
 
 private:
-	Renderer * m_Renderer;
+	Renderer *m_Renderer;
 	Object *m_Objects[MAX_OBJECTS];
 
 	//GLuint m_TestTexture = 0;

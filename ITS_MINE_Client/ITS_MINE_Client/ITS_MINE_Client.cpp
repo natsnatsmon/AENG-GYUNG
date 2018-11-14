@@ -43,8 +43,8 @@ CInfo info;
 //CItemObj *item[MAX_ITEMS];
 
 // 패킷 구조체 선언
-CtoSPacket *cTsPacket = new CtoSPacket;
-StoCPacket *sTcPacket = new StoCPacket;
+CtoSPacket cTsPacket;
+StoCPacket sTcPacket;
 
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char *msg)
@@ -91,39 +91,39 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 	return (len - left);
 }
 
-
+// 구조체 초기화 함수
 void Init() {
 
 	// 아이템 구조체 초기화
 	for (int i = 0; i < MAX_ITEMS; ++i) {
-		info.items[i] = new CItemObj;
-		info.items[i]->pos.x = 0;
-		info.items[i]->pos.y = 0;
-		info.items[i]->playerID = nullPlayer;
-		info.items[i]->isVisible = false;
+		//info.items[i] = new CItemObj;
+		info.items[i].pos.x = 0;
+		info.items[i].pos.y = 0;
+		info.items[i].playerID = nullPlayer;
+		info.items[i].isVisible = false;
 	}
 
 	// C -> S Packet 구조체 초기화
 	for (int i = 0; i < 4; ++i)
-		cTsPacket->keyDown[i] = false;
-	cTsPacket->life = 5;
+		cTsPacket.keyDown[i] = false;
+	cTsPacket.life = 5;
 
 	// S -> C Packet 구조체 초기화
-	sTcPacket->p1Pos.x = INIT_POS;
-	sTcPacket->p1Pos.y = INIT_POS;
-	sTcPacket->p2Pos.x = INIT_POS;
-	sTcPacket->p2Pos.y = INIT_POS;
+	sTcPacket.p1Pos.x = INIT_POS;
+	sTcPacket.p1Pos.y = INIT_POS;
+	sTcPacket.p2Pos.x = INIT_POS;
+	sTcPacket.p2Pos.y = INIT_POS;
 
 	for (int i = 0; i < MAX_ITEMS; ++i) {
-		sTcPacket->itemPos[i].x = INIT_POS;
-		sTcPacket->itemPos[i].y = INIT_POS;
-		sTcPacket->playerID[i] = nullPlayer;
-		sTcPacket->isVisible[i] = false;
+		sTcPacket.itemPos[i].x = INIT_POS;
+		sTcPacket.itemPos[i].y = INIT_POS;
+		sTcPacket.playerID[i] = nullPlayer;
+		sTcPacket.isVisible[i] = false;
 
 	}
 
-	sTcPacket->time = 0;
-	sTcPacket->gameState = MainState;
+	sTcPacket.time = 0;
+	sTcPacket.gameState = MainState;
 
 	// 게임 정보 구조체 초기화
 	info.gameState = MainState;
@@ -131,9 +131,9 @@ void Init() {
 	for (int i = 0; i < MAX_PLAYERS; ++i)
 		info.playersPos[i] = { 0, };
 	for (int i = 0; i < MAX_ITEMS; ++i) {
-		info.items[i]->pos = { 0, 0 };
-		info.items[i]->isVisible = 0;
-		info.items[i]->playerID = nullPlayer;
+		info.items[i].pos = { 0, 0 };
+		info.items[i].isVisible = 0;
+		info.items[i].playerID = nullPlayer;
 	}
 	
 
@@ -146,25 +146,25 @@ void Init() {
 	info.playersPos[1].y = -38.f;
 
 
-	info.items[0]->pos.x = 30.f;
-	info.items[0]->pos.y = 20.f;
-	info.items[0]->playerID = nullPlayer;
-	info.items[0]->isVisible = true;
+	info.items[0].pos.x = 30.f;
+	info.items[0].pos.y = 20.f;
+	info.items[0].playerID = nullPlayer;
+	info.items[0].isVisible = true;
 
-	info.items[1]->pos.x = -70.f;
-	info.items[1]->pos.y = -72.f;
-	info.items[1]->playerID = player1;
-	info.items[1]->isVisible = true;
+	info.items[1].pos.x = -70.f;
+	info.items[1].pos.y = -72.f;
+	info.items[1].playerID = player1;
+	info.items[1].isVisible = true;
 
-	info.items[2]->pos.x = 143.f;
-	info.items[2]->pos.y = 153.f;
-	info.items[2]->playerID = player2;
-	info.items[2]->isVisible = true;
+	info.items[2].pos.x = 143.f;
+	info.items[2].pos.y = 153.f;
+	info.items[2].playerID = player2;
+	info.items[2].isVisible = true;
 
-	info.items[3]->pos.x = -111.f;
-	info.items[3]->pos.y = 111.f;
-	info.items[3]->playerID = nullPlayer;
-	info.items[3]->isVisible = true;
+	info.items[3].pos.x = -111.f;
+	info.items[3].pos.y = 111.f;
+	info.items[3].playerID = nullPlayer;
+	info.items[3].isVisible = true;
 }
 
 
@@ -185,10 +185,10 @@ void RecvFromServer(SOCKET s) {
 
 	// 받은 데이터 서버 관리 패킷에 삽입
 	buf[retVal] = '\0';
-	memcpy(sTcPacket, buf, SIZE_SToCPACKET);
+	memcpy(&sTcPacket, buf, SIZE_SToCPACKET);
 
 	std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
-		<< "좌표: " << sTcPacket->p1Pos.x << ", " << sTcPacket->p1Pos.y << std::endl;
+		<< "좌표: " << sTcPacket.p1Pos.x << ", " << sTcPacket.p1Pos.y << std::endl;
 }
 
 void SendToServer(SOCKET s) {
@@ -199,7 +199,7 @@ void SendToServer(SOCKET s) {
 	char buf[SIZE_CToSPACKET];
 
 	// 통신 버퍼에 패킷 메모리 복사
-	memcpy(buf, cTsPacket, SIZE_CToSPACKET);
+	memcpy(buf, &cTsPacket, SIZE_CToSPACKET);
 
 	// 전송(송신버퍼에 복사)
 	retVal = send(s, buf, sizeof(CtoSPacket), 0);
@@ -262,19 +262,19 @@ void KeyDownInput(unsigned char key, int x, int y)
 
 	if (key == 'w' || key == 'W')
 	{
-		cTsPacket->keyDown[W] = true;
+		cTsPacket.keyDown[W] = true;
 	}
 	else if (key == 'a' || key == 'A')
 	{
-		cTsPacket->keyDown[A] = true;
+		cTsPacket.keyDown[A] = true;
 	}
 	else if (key == 's' || key == 'S')
 	{
-		cTsPacket->keyDown[S] = true;
+		cTsPacket.keyDown[S] = true;
 	}
 	else if (key == 'd' || key == 'D')
 	{
-		cTsPacket->keyDown[D] = true;
+		cTsPacket.keyDown[D] = true;
 	}
 }
 
@@ -282,19 +282,19 @@ void KeyUpInput(unsigned char key, int x, int y)
 {
 	if (key == 'w' || key == 'W')
 	{
-		cTsPacket->keyDown[W] = false;
+		cTsPacket.keyDown[W] = false;
 	}
 	else if (key == 'a' || key == 'A')
 	{
-		cTsPacket->keyDown[A] = false;
+		cTsPacket.keyDown[A] = false;
 	}
 	else if (key == 's' || key == 'S')
 	{
-		cTsPacket->keyDown[S] = false;
+		cTsPacket.keyDown[S] = false;
 	}
 	else if (key == 'd' || key == 'D')
 	{
-		cTsPacket->keyDown[D] = false;
+		cTsPacket.keyDown[D] = false;
 	}
 }
 
@@ -322,15 +322,6 @@ void KeyUpInput(unsigned char key, int x, int y)
 //	g_Shoot = SHOOT_NONE;
 //}
 
-void DeleteAll()
-{
-	delete cTsPacket;
-	delete sTcPacket;
-
-	for (int i = 0; i < MAX_ITEMS; ++i) {
-		delete info.items[i];
-	}
-}
 
 DWORD WINAPI ProccessClient(LPVOID arg) {
 	printf("클라이언트 통신 스레드 생성\n");

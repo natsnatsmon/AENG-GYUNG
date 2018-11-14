@@ -63,8 +63,8 @@ struct SInfo {
 	short connectedP;		// 연결된 플레이어의 수
 	DWORD gameTime;			// 게임 시간
 
-	SPlayer *players[MAX_PLAYERS];	// 플레이어 구조체
-	SItemObj *items[MAX_ITEMS];	// 아이템 구조체
+	SPlayer players[MAX_PLAYERS];	// 플레이어 구조체
+	SItemObj items[MAX_ITEMS];	// 아이템 구조체
 };
 
 // Client -> Server

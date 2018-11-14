@@ -94,5 +94,5 @@ typedef struct CInfo {
 	short life;		// 플레이어 생명
 
 	Vec playersPos[MAX_PLAYERS];
-	CItemObj *items[MAX_ITEMS];  // 아이템 구조체
+	CItemObj items[MAX_ITEMS];  // 아이템 구조체
 }; 

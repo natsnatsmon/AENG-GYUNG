@@ -22,12 +22,12 @@ HANDLE hSendEvt;			// sTcPacket을 갱신하고 데이터를 전송하는 이벤트 객체 (이전 U
 SInfo info;
 
 // 패킷 구조체 선언
-CtoSPacket *cTsPacket[MAX_PLAYERS];
-StoCPacket *sTcPacket;
+CtoSPacket cTsPacket[MAX_PLAYERS];
+StoCPacket sTcPacket;
 
 // 각 클라에 대해 갱신된 값을 갖고있을 변수
-SPlayer *tempPlayers[MAX_PLAYERS];
-SItemObj *tempItems[MAX_PLAYERS];
+SPlayer tempPlayers[MAX_PLAYERS];
+SItemObj tempItems[MAX_PLAYERS];
 
 // 각 클라이언트 전용 소켓 배열
 SOCKET clientSocks[2];
@@ -65,80 +65,6 @@ void err_display(const char *msg)
 	LocalFree(lpMsgBuf);
 }
 
-
-void Init() {
-	// 게임 정보 구조체 초기화
-	info.connectedP = 0;
-	info.gameTime = 0;
-
-	// 게임 정보 구조체 내의 플레이어 구조체 정보 및 임시플레이어 구조체 정보 초기화
-	for (int i = 0; i < MAX_PLAYERS; ++i) {
-		info.players[i] = new SPlayer;
-		info.players[i]->gameState = LobbyState;
-		info.players[i]->pos.x = INIT_POS;
-		info.players[i]->pos.y = INIT_POS;
-		info.players[i]->life = INIT_LIFE;
-		for (int j = 0; j < 4; ++j)
-			info.players[i]->keyDown[j] = false;
-
-		tempPlayers[i] = new SPlayer;
-		tempPlayers[i]->gameState = info.players[i]->gameState;
-		tempPlayers[i]->pos.x = info.players[i]->pos.x;
-		tempPlayers[i]->pos.y = info.players[i]->pos.y;
-		tempPlayers[i]->life = info.players[i]->life;
-		for (int j = 0; j < 4; ++j)
-			tempPlayers[i]->keyDown[j] = info.players[i]->keyDown[j];
-	}
-
-	// 게임 정보 구조체 내의 아이템 구조체 정보 및 임시아이템 구조체 정보 초기화
-	for (int i = 0; i < MAX_ITEMS; ++i) {
-		info.items[i] = new SItemObj;
-		// 아이템의 좌표를 40 ~ 760 사이로 랜덤하게 놓기
-		info.items[i]->pos.x = (float)(rand() % 720 + (R_ITEM * 2)) - HALF_WIDTH;
-		info.items[i]->pos.y = (float)(rand() % 720 + (R_ITEM * 2)) - HALF_WIDTH;
-		info.items[i]->direction.x = 0;
-		info.items[i]->direction.y = 0;
-		info.items[i]->velocity = 0.f;
-		info.items[i]->playerID = nullPlayer;
-		info.items[i]->isVisible = false;
-
-		tempItems[i] = new SItemObj;
-		tempItems[i]->pos.x = info.items[i]->pos.x;
-		tempItems[i]->pos.y = info.items[i]->pos.y;
-		tempItems[i]->direction.x = info.items[i]->direction.x;
-		tempItems[i]->direction.y = info.items[i]->direction.y;
-		tempItems[i]->velocity = info.items[i]->velocity;
-		tempItems[i]->playerID = info.items[i]->playerID;
-		tempItems[i]->isVisible = info.items[i]->isVisible;
-	}
-
-	// C -> S Packet 구조체 초기화
-	for (int i = 0; i < MAX_PLAYERS; ++i)
-	{
-		cTsPacket[i]= new CtoSPacket;
-		cTsPacket[i]->life = INIT_LIFE;
-
-		for(int j = 0; j < 4; j++)
-			cTsPacket[i]->keyDown[j] = false;
-	}
-
-	// S -> C Packet 구조체 초기화
-	sTcPacket = new StoCPacket;
-	sTcPacket->p1Pos = { INIT_POS, INIT_POS };
-	sTcPacket->p2Pos = { INIT_POS, INIT_POS };
-
-	for (int i = 0; i < MAX_ITEMS; ++i) {
-		sTcPacket->itemPos[i] = { INIT_POS, INIT_POS };
-		sTcPacket->playerID[i] = nullPlayer;
-		sTcPacket->isVisible[i] = false;
-	}
-
-	// 아이템은 아직 초기화 안함
-	sTcPacket->time = 0;
-	sTcPacket->gameState = LobbyState;
-
-}
-
 //★ 사용자 정의 데이터 수신 함수(고정길이 만큼 반복 수신)
 int recvn(SOCKET s, char *buf, int len, int flags)
 {
@@ -159,25 +85,83 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 	return (len - left);
 }
 
-void DeleteAll()
-{
-	for (int i = 0; i < MAX_PLAYERS; ++i) {
-		delete info.players[i];
-		delete cTsPacket[i];
+// 구조체 초기화 함수
+void Init() {
+	// 게임 정보 구조체 초기화
+	info.connectedP = 0;
+	info.gameTime = 0;
 
-		delete tempItems[i];
-		delete tempPlayers[i];
+	// 게임 정보 구조체 내의 플레이어 구조체 정보 및 임시플레이어 구조체 정보 초기화
+	for (int i = 0; i < MAX_PLAYERS; ++i) {
+		info.players[i].gameState = LobbyState;
+		info.players[i].pos.x = INIT_POS;
+		info.players[i].pos.y = INIT_POS;
+		info.players[i].life = INIT_LIFE;
+		for (int j = 0; j < 4; ++j)
+			info.players[i].keyDown[j] = false;
+
+		tempPlayers[i].gameState = info.players[i].gameState;
+		tempPlayers[i].pos.x = info.players[i].pos.x;
+		tempPlayers[i].pos.y = info.players[i].pos.y;
+		tempPlayers[i].life = info.players[i].life;
+		for (int j = 0; j < 4; ++j)
+			tempPlayers[i].keyDown[j] = info.players[i].keyDown[j];
 	}
+
+	// 게임 정보 구조체 내의 아이템 구조체 정보 및 임시아이템 구조체 정보 초기화
+	for (int i = 0; i < MAX_ITEMS; ++i) {
+		// 아이템의 좌표를 40 ~ 760 사이로 랜덤하게 놓기
+		info.items[i].pos.x = (float)(rand() % 720 + (R_ITEM * 2)) - HALF_WIDTH;
+		info.items[i].pos.y = (float)(rand() % 720 + (R_ITEM * 2)) - HALF_WIDTH;
+		info.items[i].direction.x = 0;
+		info.items[i].direction.y = 0;
+		info.items[i].velocity = 0.f;
+		info.items[i].playerID = nullPlayer;
+		info.items[i].isVisible = false;
+
+		tempItems[i].pos.x = info.items[i].pos.x;
+		tempItems[i].pos.y = info.items[i].pos.y;
+		tempItems[i].direction.x = info.items[i].direction.x;
+		tempItems[i].direction.y = info.items[i].direction.y;
+		tempItems[i].velocity = info.items[i].velocity;
+		tempItems[i].playerID = info.items[i].playerID;
+		tempItems[i].isVisible = info.items[i].isVisible;
+	}
+
+	// C -> S Packet 구조체 초기화
+	for (int i = 0; i < MAX_PLAYERS; ++i)
+	{
+		//cTsPacket[i]= new CtoSPacket;
+		cTsPacket[i].life = INIT_LIFE;
+
+		for(int j = 0; j < 4; j++)
+			cTsPacket[i].keyDown[j] = false;
+	}
+
+	// S -> C Packet 구조체 초기화
+	sTcPacket.p1Pos = { INIT_POS, INIT_POS };
+	sTcPacket.p2Pos = { INIT_POS, INIT_POS };
 
 	for (int i = 0; i < MAX_ITEMS; ++i) {
-		delete info.items[i];
+		sTcPacket.itemPos[i] = { INIT_POS, INIT_POS };
+		sTcPacket.playerID[i] = nullPlayer;
+		sTcPacket.isVisible[i] = false;
 	}
 
-	delete sTcPacket;
+	// 아이템은 아직 초기화 안함
+	sTcPacket.time = 0;
+	sTcPacket.gameState = LobbyState;
+
+}
+
+void DeleteAll() {
+
+
+
 }
 
 // 사용자 정의 데이터 수신 함수(클라이언트로부터 입력받은 데이터 수신)
-//★ 함수 형태 바꿈. 오류 있을 시 스레드 함수에서 값 받고 closesocket()
+//★ 함수 형태 바꿈. 오류 있을 시 스레드 함수에서 리턴값 받고 break하여 closesocket()
 int RecvFromClient(SOCKET client_sock, short PlayerID)
 {
 	int retVal;
@@ -206,7 +190,7 @@ int RecvFromClient(SOCKET client_sock, short PlayerID)
 	buf[retVal] = '\0';
 
 	// 해당하는 클라이언트 패킷버퍼에 받은 데이터(buf)를 복사
-	memcpy(cTsPacket[playerID], buf, SIZE_CToSPACKET);
+	memcpy(&cTsPacket[playerID], buf, SIZE_CToSPACKET);
 
 	// 받은 데이터 출력 (테스트)
 	//std::cout << std::endl
@@ -235,7 +219,7 @@ void SendToClient()
 
 	// 통신 버퍼에 패킷 메모리 복사
 	ZeroMemory(buf, SIZE_SToCPACKET);
-	memcpy(buf, sTcPacket, SIZE_SToCPACKET);
+	memcpy(buf, &sTcPacket, SIZE_SToCPACKET);
 	
 	for (int i = 0; i < info.connectedP; i++)
 	{
@@ -254,10 +238,10 @@ void SendToClient()
 void UpdatePosition(short playerID) {
 
 	BOOL tempKeyDown[4] = { 
-		cTsPacket[playerID]->keyDown[W], 
-		cTsPacket[playerID]->keyDown[A], 
-		cTsPacket[playerID]->keyDown[S], 
-		cTsPacket[playerID]->keyDown[D] 
+		cTsPacket[playerID].keyDown[W], 
+		cTsPacket[playerID].keyDown[A], 
+		cTsPacket[playerID].keyDown[S], 
+		cTsPacket[playerID].keyDown[D] 
 	};
 
 	// 내 위치 계산 및 대입
@@ -357,8 +341,8 @@ void UpdatePosition(short playerID) {
 	Vel_y = Vel_y + Accel_y * eTime;
 
 	// calc pos(최종 계산된 위치값을 갖고있음)
-	tempPlayers[playerID]->pos.x = tempPlayers[playerID]->pos.x + Vel_x * eTime;
-	tempPlayers[playerID]->pos.y = tempPlayers[playerID]->pos.y + Vel_y * eTime;
+	tempPlayers[playerID].pos.x = tempPlayers[playerID].pos.x + Vel_x * eTime;
+	tempPlayers[playerID].pos.y = tempPlayers[playerID].pos.y + Vel_y * eTime;
 
 	//std::cout << "tempPlayers 좌표 계산 후: "<< tempPlayers[playerID]->pos.x << ", " << tempPlayers[playerID]->pos.y << std::endl;
 
@@ -384,8 +368,8 @@ bool GameEndCheck()
 
 	// LifeCheck 작성
 	for (int playerID = 0; playerID < MAX_PLAYERS; ++playerID) {
-		if (info.players[playerID]->life <= 0) {
-			sTcPacket->gameState = GameOverState;
+		if (info.players[playerID].life <= 0) {
+			sTcPacket.gameState = GameOverState;
 			return true;
 		}
 		else 
@@ -444,11 +428,11 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		
 		// 위에서 계산한 모든 갱신된 값을 info에 대입
 		// 캐릭터 위치
-		info.players[playerID]->pos.x = tempPlayers[playerID]->pos.x;
-		info.players[playerID]->pos.y = tempPlayers[playerID]->pos.y;
+		info.players[playerID].pos.x = tempPlayers[playerID].pos.x;
+		info.players[playerID].pos.y = tempPlayers[playerID].pos.y;
 		
 		// 테스트용 출력
-		//std::cout << "info내 플레이어 좌표: " << info.players[playerID]->pos.x << ", " << info.players[playerID]->pos.y << std::endl;
+		std::cout << "info내 플레이어 좌표: " << info.players[playerID].pos.x << ", " << info.players[playerID].pos.y << std::endl;
 
 		// 스테이트에 따른 switch문(이건 어디로 가야하나..?)
 		/*
@@ -509,15 +493,15 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 		// 패킷에 갱신된 info 값들을 대입
 		// sTcPacket->time = info.gameTime;		// ★ 게임 시간 계산은..?
 
-		sTcPacket->gameState = info.players[0]->gameState;		// ★ 0번 클라이언트의 상태를 전송한다.(수정 필요할 듯)
+		sTcPacket.gameState = info.players[0].gameState;		// ★ 0번 클라이언트의 상태를 전송한다.(수정 필요할 듯)
 		
-		sTcPacket->p1Pos = info.players[0]->pos;
-		sTcPacket->p2Pos = info.players[1]->pos;
+		sTcPacket.p1Pos = info.players[0].pos;
+		sTcPacket.p2Pos = info.players[1].pos;
 		
 		for (int i = 0; i < MAX_ITEMS; ++i) {
-			sTcPacket->itemPos[i] = info.items[i]->pos;
-			sTcPacket->playerID[i] = info.items[i]->playerID;
-			sTcPacket->isVisible[i] = info.items[i]->isVisible;
+			sTcPacket.itemPos[i] = info.items[i].pos;
+			sTcPacket.playerID[i] = info.items[i].playerID;
+			sTcPacket.isVisible[i] = info.items[i].isVisible;
 		}
 
 		// SendToClient() 작성
@@ -601,6 +585,7 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+
 
 	// delete()
 	DeleteAll();

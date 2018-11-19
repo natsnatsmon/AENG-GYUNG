@@ -351,13 +351,53 @@ void UpdatePosition(short playerID) {
 }
 
 // 종원
-void CollisionCheck(short playerID)
+void P_I_CollisionCheck(short playerID)	//Player, Items
 {
+	int x = 0, y = 0;
+	for (int i = 0; i < 99; i++)
+	{
+		if (playerID == player1)
+		{
+			x = tempPlayers[player2].pos.x - tempPlayers[player1].pos.x;
+			y = tempPlayers[player2].pos.y - tempPlayers[player1].pos.y;
+		}
+		else if (playerID == player2)
+		{
+			x = tempPlayers[player1].pos.x - tempPlayers[player2].pos.x;
+			y = tempPlayers[player1].pos.y - tempPlayers[player2].pos.y;
+		}
+
+
+		if (!tempItems[i].isVisible)
+			break;
+		else if (tempItems[i].velocity == 0.f)
+		{
+			if (sqrtf(x * x + y * y) < (PLAYER_SIZE + ITEM_SIZE) / 2.f)
+			{
+				printf("플레이어 %d, %d번째 총알 충돌!", playerID, i);
+				tempItems[i].playerID = playerID;
+				tempItems[i].velocity = 3.f;
+				tempItems[i].direction = { x / sqrtf(x *x + y * y), y / sqrtf(x * x + y * y) };
+			}
+		}
+	}
 	// playerID를 이용해 계산 후 tempItems[playerID]에 넣을 것!
 
 	// 아이템 먹은 플레이어ID
 
 	// 아이템 표시 여부
+}
+
+void P_B_CollisionCheck(short playerID)// Player, Bullets
+{
+	float x = 0, y = 0;
+	for (int i = 0; i < 99; i++)
+	{
+		if (tempItems[i].playerID != nullPlayer)
+		{
+		}
+
+	}
 }
 
 // 하연
@@ -425,7 +465,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 
 		// 받은 데이터를 이용해 계산
 		// 충돌로 인한 아이템 먹은 플레이어ID, 아이템 표시 여부 계산
-		CollisionCheck(playerID);	// ★ 종원
+		P_I_CollisionCheck(playerID);	// ★ 종원
 		
 		// 위에서 계산한 결과와 받은 데이터를 토대로 게임이 종료되었는지 체크
 		if (!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)

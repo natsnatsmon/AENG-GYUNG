@@ -25,6 +25,10 @@
 #define COEF_FRICT 0.5f
 #define GRAVITY 9.8f
 
+
+#define PLAYER_SIZE 80.f
+#define ITEM_SIZE 40.f
+
 //★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
 enum gameState {
 	LobbyState, GamePlayState, GameOverState

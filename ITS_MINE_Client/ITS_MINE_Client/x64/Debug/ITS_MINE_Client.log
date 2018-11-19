@@ -1,4 +1,3 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(391,5): warning MSB8028: 중간 디렉터리(x64\Debug\)에 다른 프로젝트(SimpleGame.vcxproj)에서 공유하는 파일이 포함되어 있습니다.  이로 인해 잘못된 정리 및 다시 빌드 동작이 수행될 수 있습니다.
   ITS_MINE_Client.cpp
-c:\users\ha6q6\desktop\project\3학년\12_넷겜플\aeng-gyung\its_mine_client\its_mine_client\its_mine_client.cpp(137): warning C4101: 'retval' :참조되지 않은 지역 변수입니다.
-  ITS_MINE_Client.vcxproj -> C:\Users\ha6q6\Desktop\Project\3학년\12_넷겜플\AENG-GYUNG\ITS_MINE_Client\x64\Debug\ITS_MINE_Client.exe
+  ITS_MINE_Client.vcxproj -> D:\Users\kim jung hoo\Desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\AENG-GYUNG\ITS_MINE_Client\x64\Debug\ITS_MINE_Client.exe

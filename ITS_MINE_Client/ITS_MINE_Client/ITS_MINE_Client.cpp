@@ -197,8 +197,9 @@ void RecvFromServer(SOCKET s) {
 
 
 	//std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
-	//	<< "좌표: " << sTcPacket.p1Pos.x << ", " << sTcPacket.p1Pos.y << std::endl;
-
+	//	<< "플레이어 1 좌표: " << sTcPacket.p1Pos.x << ", " << sTcPacket.p1Pos.y << std::endl;
+	//std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
+	//	<< "플레이어 2 좌표: " << sTcPacket.p2Pos.x << ", " << sTcPacket.p2Pos.y << std::endl;
 	//std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
 	//	<< "상태: " << sTcPacket.gameState << std::endl;
 	

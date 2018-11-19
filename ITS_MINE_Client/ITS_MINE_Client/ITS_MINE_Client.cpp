@@ -187,8 +187,21 @@ void RecvFromServer(SOCKET s) {
 	buf[retVal] = '\0';
 	memcpy(&sTcPacket, buf, SIZE_SToCPACKET);
 
-	std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
-		<< "좌표: " << sTcPacket.p1Pos.x << ", " << sTcPacket.p1Pos.y << std::endl;
+	info.gameState = sTcPacket.gameState;
+	info.gameTime = sTcPacket.time;
+	memcpy(&info.items->pos, sTcPacket.itemPos, sizeof(sTcPacket.itemPos));
+	memcpy(&info.items->isVisible, sTcPacket.isVisible, sizeof(sTcPacket.isVisible));
+	memcpy(&info.items->playerID, sTcPacket.playerID, sizeof(sTcPacket.playerID));
+	info.playersPos[0] = sTcPacket.p1Pos;
+	info.playersPos[1] = sTcPacket.p2Pos;
+
+
+	//std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
+	//	<< "좌표: " << sTcPacket.p1Pos.x << ", " << sTcPacket.p1Pos.y << std::endl;
+
+	//std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
+	//	<< "상태: " << sTcPacket.gameState << std::endl;
+	
 }
 
 void SendToServer(SOCKET s) {
@@ -343,7 +356,7 @@ DWORD WINAPI ProccessClient(LPVOID arg) {
 	while (1)
 	{
 		if (info.gameState == GamePlayState || info.gameState == LobbyState) {
-			Sleep(200);
+			//Sleep(200);
 			
 			// 데이터 송신
 			SendToServer(sock);

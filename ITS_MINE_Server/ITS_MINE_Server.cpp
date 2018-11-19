@@ -209,7 +209,7 @@ void SendToClient()
 {
 	// 테스트용 출력
 	// std::cout << "SendToClient() 호출" << std::endl;
-	Sleep(200);
+	//Sleep(200);
 
 	int retVal;
 	char buf[SIZE_SToCPACKET];
@@ -402,6 +402,14 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 	else
 		playerID = info.connectedP++;
 
+	if (info.connectedP == MAX_PLAYERS)
+	{
+		for (int i = 0; i < MAX_PLAYERS; i++)
+		{
+			info.players[i].gameState = GamePlayState;
+		}
+	}
+		
 	std::cout << "[TCP 서버] 클라이언트 " << playerID << "접속" << std::endl;
 
 	// 전용소켓
@@ -432,7 +440,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		info.players[playerID].pos.y = tempPlayers[playerID].pos.y;
 		
 		// 테스트용 출력
-		std::cout << "info내 플레이어 좌표: " << info.players[playerID].pos.x << ", " << info.players[playerID].pos.y << std::endl;
+		//std::cout << "info내 "<< playerID <<"번 플레이어 좌표: " << info.players[playerID].pos.x << ", " << info.players[playerID].pos.y << std::endl;
 
 		// 스테이트에 따른 switch문(이건 어디로 가야하나..?)
 		/*
@@ -529,6 +537,12 @@ int main(int argc, char *argv[])
 	// socket()
 	SOCKET listen_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (listen_sock == INVALID_SOCKET) err_quit("socket()");
+
+	// SO_REUSEADDR 소켓 옵션 설정
+	BOOL optval = TRUE;
+	retval = setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, (char*)&optval, sizeof(optval));
+	if (retval == SOCKET_ERROR)	err_quit("setsockopt()");
+	
 
 	// bind()
 	SOCKADDR_IN serveraddr;

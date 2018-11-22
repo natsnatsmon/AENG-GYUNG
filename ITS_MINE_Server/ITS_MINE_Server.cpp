@@ -490,27 +490,6 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		
 		// 테스트용 출력
 		//std::cout << "info내 "<< playerID <<"번 플레이어 좌표: " << info.players[playerID].pos.x << ", " << info.players[playerID].pos.y << std::endl;
-
-		// 스테이트에 따른 switch문(이건 어디로 가야하나..?)
-		/*
-		switch (info.players[playerID]->gameState) {
-		case LobbyState:
-			// 로비에서는 gamestate가 변경되었을때만 gamestate 정보를 보내면 된당
-			break;
-		
-		case GamePlayState:
-			// 이때는 패킷내용 다 필요하고
-			break;
-		
-		case GameOverState:
-			// 이때에는 뭐 받아야댐??
-			break;
-		
-		default:
-			printf("state 오류!\n");
-			return 1;
-		}
-		*/
 		
 		// 이 곳에 hUpdateInfoEvt 이벤트 신호 해주기
 		SetEvent(hUpdateInfoEvt);

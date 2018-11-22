@@ -474,7 +474,7 @@ bool GameEndCheck()
 	// 게임 미종료: false 반환
 
 	// LifeCheck 작성
-	for (int playerID = 0; playerID < MAX_PLAYERS; ++playerID) {
+	for (int playerID = 0; playerID < MAX_PLAYERS; playerID++) {
 		if (info.players[playerID].life <= 0) {
 			sTcPacket.gameState = GameOverState;
 			return true;
@@ -540,7 +540,6 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		// 받은 데이터를 이용해 계산
 		// 충돌로 인한 아이템 먹은 플레이어ID, 아이템 표시 여부 계산
 		P_I_CollisionCheck(playerID);	// ★ 종원
-
 		P_W_Collision();
 		
 		// 위에서 계산한 결과와 받은 데이터를 토대로 게임이 종료되었는지 체크
@@ -556,7 +555,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		info.players[playerID].pos.y = tempPlayers[playerID].pos.y;
 		
 		// 테스트용 출력
-		//std::cout << "info내 "<< playerID <<"번 플레이어 좌표: " << info.players[playerID].pos.x << ", " << info.players[playerID].pos.y << std::endl;
+		printf("info내 %d번 플레이어 좌표: %f, %f\n", playerID, info.players[playerID].pos.x, info.players[playerID].pos.y);
 		
 		// 이 곳에 hUpdateInfoEvt 이벤트 신호 해주기
 		SetEvent(hUpdateInfoEvt);
@@ -609,6 +608,9 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 
 		// SendToClient() 작성
 		SendToClient();
+
+		if(info.connectedP != 0)
+			printf("데이터 보냈다.\n");
 
 		//// 패킷 클라들한테 다 보냈다!
 		//SetEvent(hSendEvt);

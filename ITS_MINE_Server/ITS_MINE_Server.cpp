@@ -33,12 +33,15 @@ SItemObj tempItems[MAX_PLAYERS];
 // 각 클라이언트 전용 소켓 배열
 SOCKET clientSocks[2];
 
-// 이전 시간 저장 변수
+// 시간 저장 변수
+DWORD g_startTime = 0;
 DWORD g_PrevTime = 0;
 
 // 서버를 떠난 클라이언트ID
 short leaveID = -1;
+int itemIndex = 0;
 
+CRITICAL_SECTION cs;
 
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char *msg)
@@ -89,6 +92,10 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 // 구조체 초기화 함수
 void Init() {
+	g_startTime = 0;
+	g_PrevTime = 0;
+	itemIndex = 0;
+
 	// 게임 정보 구조체 초기화
 	info.connectedP = 0;
 	info.gameTime = 0;
@@ -258,6 +265,17 @@ void UpdatePosition(short playerID) {
 	g_PrevTime = currTime;
 	float eTime = (float)elapsedTime / 1000.f;		// ms to s
 
+	// 이 부분은 1초마다 아이템의 Visible을 true로 만들어주는 부분입니다
+	// 지금 eTime문제가 해결되면 위치가 변동될 수 있습니다!
+	// 시간이 일정하게 계속 갱신될 수 있는 곳에 넣어주시면 됩니다~~
+	// 공식은 현재시간 - 이전시간이 >= 1000ms(1초) 보다 크고, itemIndex가 맥스를 넘지 않을때 인덱스의 값을 true로 만들어주는거에요!
+	if (elapsedTime >= 1000 && itemIndex < MAX_ITEMS) {
+		EnterCriticalSection(&cs);
+		info.items[itemIndex].isVisible = true;
+		itemIndex++;
+		LeaveCriticalSection(&cs);
+	}
+
 	//std::cout << "elapsed time: " << eTime << std::endl;		// 시간 확인 출력
 
 
@@ -425,7 +443,12 @@ bool GameEndCheck()
 	}
 
 	// TimeCheck 작성
-	
+	DWORD currTime = GetTickCount();		// current time in millisec
+
+	if (currTime - g_startTime >= GAMEOVER_TIME) {
+		return true;
+	}
+
 
 	return false;
 }
@@ -455,6 +478,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
 			info.players[i].gameState = GamePlayState;
+			g_startTime = GetTickCount();
 		}
 	}
 		

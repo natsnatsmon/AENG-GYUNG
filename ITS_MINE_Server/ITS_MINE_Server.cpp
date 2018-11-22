@@ -421,9 +421,50 @@ void P_B_CollisionCheck(short playerID)// Player, Bullets
 	{
 		if (tempItems[i].playerID != nullPlayer)
 		{
+			x = tempItems[i].pos.x - tempPlayers[playerID].pos.x;
+			y = tempItems[i].pos.y - tempPlayers[playerID].pos.y;
+			if (sqrtf(x * x + y * y) < (ITEM_SIZE + PLAYER_SIZE) / 2.f)
+			{
+				tempPlayers[playerID].life -= 1;
+				tempItems[i].direction = { 0.f, 0.f };
+				tempItems[i].isVisible = false;
+				tempItems[i].playerID = nullPlayer;
+				tempItems[i].velocity = 0.f;
+			}
 		}
-
 	}
+}
+
+void P_P_CollisionCheck()
+{
+	float x = 0, y = 0;
+	x = tempPlayers[player1].pos.x - tempPlayers[player2].pos.x;
+	y = tempPlayers[player1].pos.y - tempPlayers[player2].pos.y;
+	if (sqrtf(x * x + y * y) < PLAYER_SIZE)
+	{
+		printf("Player - Player Collision!\n");
+	}
+}
+
+void P_W_Collision()
+{
+	if (tempPlayers[player1].pos.x > 290.f)
+		tempPlayers[player1].pos.x = 290.f;
+	if (tempPlayers[player1].pos.x < -390.f)
+		tempPlayers[player1].pos.x = -390.f;
+	if (tempPlayers[player1].pos.y > 340.f)
+		tempPlayers[player1].pos.y = 340.f;
+	if (tempPlayers[player1].pos.y < -340.f)
+		tempPlayers[player1].pos.y = -340.f;
+
+	if (tempPlayers[player2].pos.x > 290.f)
+		tempPlayers[player2].pos.x = 290.f;
+	if (tempPlayers[player2].pos.x < -390.f)
+		tempPlayers[player2].pos.x = -390.f;
+	if (tempPlayers[player2].pos.y > 340.f)
+		tempPlayers[player2].pos.y = 340.f;
+	if (tempPlayers[player2].pos.y < -340.f)
+		tempPlayers[player2].pos.y = -340.f;
 }
 
 // 하연
@@ -499,6 +540,8 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		// 받은 데이터를 이용해 계산
 		// 충돌로 인한 아이템 먹은 플레이어ID, 아이템 표시 여부 계산
 		P_I_CollisionCheck(playerID);	// ★ 종원
+
+		P_W_Collision();
 		
 		// 위에서 계산한 결과와 받은 데이터를 토대로 게임이 종료되었는지 체크
 		if (!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)

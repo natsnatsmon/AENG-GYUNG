@@ -15,13 +15,15 @@
 
 #define INIT_POS -100.f
 #define INIT_LIFE 5
+#define GAMEOVER_TIME 18300
+// 183000 = 183초 3초는 준비시간정도로
 
 #define W 0
 #define A 1
 #define S 2
 #define D 3
 
-#define MASS 0.00007f
+#define MASS 0.07f
 #define COEF_FRICT 0.0001f
 #define GRAVITY 9.8f
 

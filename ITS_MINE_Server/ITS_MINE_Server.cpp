@@ -14,6 +14,7 @@
 #include "Global.h"
 #include <iostream>
 
+
 // 동기화를 위한 이벤트 객체 
 HANDLE hUpdateInfoEvt;		// 데이터를 수신하여 계산 및 Info 갱신하는 이벤트 객체 (이전 RecvEvt 객체)
 HANDLE hSendEvt;			// sTcPacket을 갱신하고 데이터를 전송하는 이벤트 객체 (이전 UpdateEvt 객체)
@@ -37,6 +38,7 @@ DWORD g_PrevTime = 0;
 
 // 서버를 떠난 클라이언트ID
 short leaveID = -1;
+
 
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char *msg)
@@ -245,7 +247,6 @@ void UpdatePosition(short playerID) {
 	};
 
 	// 내 위치 계산 및 대입
-
 	// ★ elapsed time 계산
 	if (g_PrevTime == 0)	// g_PrevTime은 0이고 currTime은 시작부터 시간을 재고 있기때문에 처음 elapsedTime을 구할 때 차이가 너무 많아 나버릴 수 있다.
 	{
@@ -257,10 +258,13 @@ void UpdatePosition(short playerID) {
 	g_PrevTime = currTime;
 	float eTime = (float)elapsedTime / 1000.f;		// ms to s
 
+	//std::cout << "elapsed time: " << eTime << std::endl;		// 시간 확인 출력
+
+
 	// 힘 적용
 	float forceX = 0.f;
 	float forceY = 0.f;
-	float amount = 4.f;
+	float amount = 0.2f;
 
 	float Accel_x = 0.f, Accel_y = 0.f;
 	float Vel_x = 0.f, Vel_y = 0.f;
@@ -268,19 +272,23 @@ void UpdatePosition(short playerID) {
 
 	if (tempKeyDown[W])
 	{
-		forceY += amount;
+		//forceY += amount;
+		tempPlayers[playerID].pos.y = tempPlayers[playerID].pos.y + amount;
 	}	
 	if (tempKeyDown[A])
 	{
-		forceX -= amount;
+		//forceX -= amount;
+		tempPlayers[playerID].pos.x = tempPlayers[playerID].pos.x - amount;
 	}
 	if (tempKeyDown[S])
 	{
-		forceY -= amount;
+		//forceY -= amount;
+		tempPlayers[playerID].pos.y = tempPlayers[playerID].pos.y - amount;
 	}
 	if (tempKeyDown[D])
 	{
-		forceX += amount;
+		//forceX += amount;
+		tempPlayers[playerID].pos.x = tempPlayers[playerID].pos.x + amount;
 	}
 
 	// calc accel
@@ -458,6 +466,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 	clientSocks[playerID] = client_sock;
 
 	while (1) {
+
 		// 데이터 받아오기
 		retval = RecvFromClient(client_sock, playerID);
 		if (retval == SOCKET_ERROR)
@@ -471,8 +480,8 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		if (!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)
 			UpdatePosition(playerID);
 		
-		// 계산한 값 info에 넣기 전, hSendEvt 이벤트 신호 대기
-		WaitForSingleObject(hSendEvt, INFINITE);
+		// ★ 계산한 값 info에 넣기 전, hSendEvt 이벤트 신호 대기
+		//WaitForSingleObject(hSendEvt, INFINITE);
 		
 		// 위에서 계산한 모든 갱신된 값을 info에 대입
 		// 캐릭터 위치
@@ -539,7 +548,7 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 		WaitForSingleObject(hUpdateInfoEvt, INFINITE);
 
 		// 패킷에 갱신된 info 값들을 대입
-		// sTcPacket->time = info.gameTime;		// ★ 게임 시간 계산은..?
+		// sTcPacket.time = info.gameTime;		// ★ 게임 시간 계산은..?
 
 		sTcPacket.gameState = info.players[0].gameState;		// ★ 0번 클라이언트의 상태를 전송한다.(수정 필요할 듯)
 		
@@ -555,8 +564,8 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 		// SendToClient() 작성
 		SendToClient();
 
-		// 패킷 클라들한테 다 보냈다!
-		SetEvent(hSendEvt);
+		//// 패킷 클라들한테 다 보냈다!
+		//SetEvent(hSendEvt);
 	};
 
 	return 0;         
@@ -618,6 +627,7 @@ int main(int argc, char *argv[])
 
 	while(1)
 	{
+
 		while (info.connectedP < MAX_PLAYERS)		// ★ 이 조건은 다시 회의 후 결정
 		{
 			// accept()

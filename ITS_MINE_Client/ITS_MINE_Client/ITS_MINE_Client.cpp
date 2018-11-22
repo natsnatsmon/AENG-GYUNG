@@ -225,7 +225,6 @@ void SendToServer(SOCKET s) {
 
 void RenderScene(void)
 {
-
 	if (g_PrevTime == 0)
 	{
 		g_PrevTime = GetTickCount();

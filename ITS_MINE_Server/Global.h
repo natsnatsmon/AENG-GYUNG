@@ -21,8 +21,8 @@
 #define S 2
 #define D 3
 
-#define MASS 0.4f
-#define COEF_FRICT 0.5f
+#define MASS 0.00007f
+#define COEF_FRICT 0.0001f
 #define GRAVITY 9.8f
 
 

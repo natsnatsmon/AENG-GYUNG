@@ -1,3 +1,21 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(391,5): warning MSB8028: 중간 디렉터리(x64\Debug\)에 다른 프로젝트(SimpleGame.vcxproj)에서 공유하는 파일이 포함되어 있습니다.  이로 인해 잘못된 정리 및 다시 빌드 동작이 수행될 수 있습니다.
+  stdafx.cpp
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\global.h(98): warning C4091: 'typedef ': 변수를 선언하지 않으면 'CInfo' 왼쪽은 무시됩니다.
   ITS_MINE_Client.cpp
+  LoadPng.cpp
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\loadpng.cpp(800): warning C4334: '<<': 32비트 시프트의 결과가 암시적으로 64비트로 변환됩니다. 64비트 시프트를 사용하시겠습니까?
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\loadpng.cpp(1462): warning C4267: '=': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\loadpng.cpp(1466): warning C4267: '=': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\loadpng.cpp(1538): warning C4267: '=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\loadpng.cpp(3483): warning C4334: '<<': 32비트 시프트의 결과가 암시적으로 64비트로 변환됩니다. 64비트 시프트를 사용하시겠습니까?
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\loadpng.cpp(3497): warning C4267: '인수': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\loadpng.cpp(4338): warning C4267: '=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\loadpng.cpp(4386): warning C4267: '=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\loadpng.cpp(4466): warning C4267: '=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\loadpng.cpp(5409): warning C4267: '초기화 중': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  Object.cpp
+  Renderer.cpp
+d:\users\kim jung hoo\desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\aeng-gyung\its_mine_client\its_mine_client\renderer.cpp(125): warning C4267: '=': 'size_t'에서 'GLint'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  ScnMgr.cpp
+  코드를 생성하고 있습니다...
   ITS_MINE_Client.vcxproj -> D:\Users\kim jung hoo\Desktop\김정현\학교\강의\3학년 2학기\01.전공\넷겜플\텀프로젝트\AENG-GYUNG\ITS_MINE_Client\x64\Debug\ITS_MINE_Client.exe

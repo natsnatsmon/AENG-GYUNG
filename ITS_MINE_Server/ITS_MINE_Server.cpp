@@ -16,8 +16,7 @@
 
 
 // 동기화를 위한 이벤트 객체 
-HANDLE hUpdateInfoEvt;		// 데이터를 수신하여 계산 및 Info 갱신하는 이벤트 객체 (이전 RecvEvt 객체)
-HANDLE hSendEvt;			// sTcPacket을 갱신하고 데이터를 전송하는 이벤트 객체 (이전 UpdateEvt 객체)
+HANDLE hUpdateInfoEvt[2];		// 데이터를 수신하여 계산 및 Info 갱신하는 이벤트 객체 (이전 RecvEvt 객체)
 
 // 서버 구동에 사용할 변수(게임 관련 정보)
 SInfo info;
@@ -276,7 +275,7 @@ void UpdatePosition(short playerID) {
 		LeaveCriticalSection(&cs);
 	}
 
-	//std::cout << "elapsed time: " << eTime << std::endl;		// 시간 확인 출력
+	printf("elapsed time: %f", eTime);		// 시간 확인 출력
 
 
 	// 힘 적용
@@ -485,12 +484,11 @@ bool GameEndCheck()
 
 	// TimeCheck 작성
 	DWORD currTime = GetTickCount();		// current time in millisec
-
-	if (currTime - g_startTime >= GAMEOVER_TIME) {
+	info.gameTime = currTime - g_startTime;
+	if (info.gameTime >= GAMEOVER_TIME) {
 		return true;
 	}
-
-
+	
 	return false;
 }
 
@@ -555,10 +553,11 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		info.players[playerID].pos.y = tempPlayers[playerID].pos.y;
 		
 		// 테스트용 출력
-		printf("info내 %d번 플레이어 좌표: %f, %f\n", playerID, info.players[playerID].pos.x, info.players[playerID].pos.y);
-		
+		//printf("info내 %d번 플레이어 좌표: %f, %f\n", playerID, info.players[playerID].pos.x, info.players[playerID].pos.y);
+		printf("%d 번 플레이어 계산 끝!\n", playerID);
+
 		// 이 곳에 hUpdateInfoEvt 이벤트 신호 해주기
-		SetEvent(hUpdateInfoEvt);
+		SetEvent(hUpdateInfoEvt[playerID]);
 	}
 
 
@@ -590,10 +589,10 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 	while(1)
 	{
 		// sTcPacket에 갱신된 정보 넣기 전, hUpdateInfoEvt 이벤트 신호 대기
-		WaitForSingleObject(hUpdateInfoEvt, INFINITE);
+		WaitForMultipleObjects(MAX_PLAYERS, hUpdateInfoEvt, TRUE ,30);
 
 		// 패킷에 갱신된 info 값들을 대입
-		// sTcPacket.time = info.gameTime;		// ★ 게임 시간 계산은..?
+		sTcPacket.time = info.gameTime;		// ★ 게임 시간 계산은..?
 
 		sTcPacket.gameState = info.players[0].gameState;		// ★ 0번 클라이언트의 상태를 전송한다.(수정 필요할 듯)
 		
@@ -611,9 +610,6 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 
 		if(info.connectedP != 0)
 			printf("데이터 보냈다.\n");
-
-		//// 패킷 클라들한테 다 보냈다!
-		//SetEvent(hSendEvt);
 	};
 
 	return 0;         
@@ -664,11 +660,6 @@ int main(int argc, char *argv[])
 
 	hUpdatePackAndSend = CreateThread(NULL, 0, UpdatePackAndSend, NULL, 0, NULL); // UpdatePackAndSend 생성 (이전 hCalculateThread)
 
-	// 두 개의 자동 리셋 이벤트 객체 생성(데이터 수신 이벤트, 갱신 이벤트)
-	hUpdateInfoEvt = CreateEvent(NULL, FALSE, FALSE, NULL);	// 비신호 상태(바로 시작o)
-	if (hUpdateInfoEvt == NULL) return 1;
-	hSendEvt = CreateEvent(NULL, FALSE, TRUE, NULL);	// 신호 상태(바로 시작x)
-	if (hSendEvt == NULL) return 1;
 
 	// 테스트트트트트트트
 	printf("보낼 패킷 사이즈 : %zd\n", SIZE_SToCPACKET);
@@ -688,6 +679,9 @@ int main(int argc, char *argv[])
 	
 			// hRecvAndUpdateInfo 생성 (이전 hProccessClient)
 			hRecvAndUpdateInfo[info.connectedP] = CreateThread(NULL, 0, RecvAndUpdateInfo, (LPVOID)clientSock, 0, NULL);
+			// 두 개의 자동 리셋 이벤트 객체 생성(데이터 수신 이벤트, 갱신 이벤트)
+			hUpdateInfoEvt[info.connectedP] = CreateEvent(NULL, FALSE, FALSE, NULL);	// 비신호 상태(바로 시작o)
+			if (hUpdateInfoEvt == NULL) return 1;
 			//hUpdatePackAndSend = CreateThread(NULL, 0, UpdatePackAndSend, (LPVOID)clientSock, 0, NULL);
 			if (hRecvAndUpdateInfo[info.connectedP] == NULL) {
 				closesocket(clientSock);

@@ -1,5 +1,10 @@
 #pragma once
 
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
+
 #define SERVERPORT 8888
 
 #define SIZE_CToSPACKET 6

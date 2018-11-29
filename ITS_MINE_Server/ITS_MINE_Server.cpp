@@ -9,10 +9,7 @@
 #pragma comment(lib, "ws2_32")
 
 #include <winsock2.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include "Global.h"
-#include <iostream>
 
 
 // 동기화를 위한 이벤트 객체 
@@ -35,12 +32,130 @@ SOCKET clientSocks[2];
 // 시간 저장 변수
 DWORD g_startTime = 0;
 DWORD g_PrevTime = 0;
+DWORD s_PrevTime = 0; // server의 시간이란 의미로 s_를......... .... PrevTime 겹치길래.....ㅜ
+
 
 // 서버를 떠난 클라이언트ID
 short leaveID = -1;
 int itemIndex = 0;
 
 CRITICAL_SECTION cs;
+void err_quit(const char *msg);
+void err_display(const char *msg);
+int recvn(SOCKET s, char *buf, int len, int flags);
+
+void Init();
+void DeleteAll();
+
+int RecvFromClient(SOCKET client_sock, short PlayerID);
+void SendToClient();
+void UpdatePosition(short playerID);
+
+void P_I_CollisionCheck(short playerID);	//Player, Items
+void P_B_CollisionCheck(short playerID);// Player, Bullets
+void P_P_CollisionCheck();
+void P_W_Collision();
+void B_W_CollisionAndUpdate(); // 총알 이동, 총알  벽 충돌처리.
+
+bool GameEndCheck();
+DWORD WINAPI RecvAndUpdateInfo(LPVOID arg);
+DWORD WINAPI UpdatePackAndSend(LPVOID arg);
+
+
+int main(int argc, char *argv[])
+{
+	int retval;		// 모든 return value를 받을 변수
+
+	// 구조체 초기화
+	Init();
+
+	// 윈속 초기화
+	WSADATA wsa;
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+		return 1;
+
+	// socket()
+	SOCKET listen_sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (listen_sock == INVALID_SOCKET) err_quit("socket()");
+
+	// SO_REUSEADDR 소켓 옵션 설정
+	BOOL optval = TRUE;
+	retval = setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, (char*)&optval, sizeof(optval));
+	if (retval == SOCKET_ERROR)	err_quit("setsockopt()");
+	
+
+	// bind()
+	SOCKADDR_IN serveraddr;
+	ZeroMemory(&serveraddr, sizeof(serveraddr));
+	serveraddr.sin_family = AF_INET;
+	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	serveraddr.sin_port = htons(SERVERPORT);
+	retval = bind(listen_sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
+	if (retval == SOCKET_ERROR) err_quit("bind()");
+
+	// listen()
+	retval = listen(listen_sock, SOMAXCONN);
+	if (retval == SOCKET_ERROR) err_quit("listen()");
+
+	// 데이터 통신에 사용할 변수
+	SOCKET clientSock;
+	SOCKADDR_IN clientAddr;
+	int addrlen;
+
+	HANDLE hRecvAndUpdateInfo[2];	// 클라이언트 처리 스레드 핸들
+	HANDLE hUpdatePackAndSend;	// 연산 스레드 핸들
+
+	hUpdatePackAndSend = CreateThread(NULL, 0, UpdatePackAndSend, NULL, 0, NULL); // UpdatePackAndSend 생성 (이전 hCalculateThread)
+	
+		// SendToClient() 작성
+	if (s_PrevTime == 0)
+	{
+		s_PrevTime = GetTickCount();
+	}
+
+	// 테스트트트트트트트
+	printf("보낼 패킷 사이즈 : %zd\n", SIZE_SToCPACKET);
+
+	while(1)
+	{
+
+		while (info.connectedP < MAX_PLAYERS)		// ★ 이 조건은 다시 회의 후 결정
+		{
+			// accept()
+			addrlen = sizeof(clientAddr);
+			clientSock = accept(listen_sock, (SOCKADDR *)&clientAddr, &addrlen);
+			if (clientSock == INVALID_SOCKET) {
+				err_display("accept()");
+				break;
+			}
+	
+			// hRecvAndUpdateInfo 생성 (이전 hProccessClient)
+			hRecvAndUpdateInfo[info.connectedP] = CreateThread(NULL, 0, RecvAndUpdateInfo, (LPVOID)clientSock, 0, NULL);
+			// 두 개의 자동 리셋 이벤트 객체 생성(데이터 수신 이벤트, 갱신 이벤트)
+			hUpdateInfoEvt[info.connectedP] = CreateEvent(NULL, FALSE, FALSE, NULL);	// 비신호 상태(바로 시작o)
+			if (hUpdateInfoEvt == NULL) return 1;
+			//hUpdatePackAndSend = CreateThread(NULL, 0, UpdatePackAndSend, (LPVOID)clientSock, 0, NULL);
+			if (hRecvAndUpdateInfo[info.connectedP] == NULL) {
+				closesocket(clientSock);
+			}
+			else { 
+				CloseHandle(hRecvAndUpdateInfo[info.connectedP]);		//★ 스레드 핸들값을 바로 삭제할지도 논의 필요
+			}
+		}
+	}
+
+
+	// delete()
+	DeleteAll();
+
+	// closesocket()
+	closesocket(listen_sock);
+
+	// 윈속 종료
+	WSACleanup();
+	return 0;
+}
+
 
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char *msg)
@@ -93,6 +208,7 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 void Init() {
 	g_startTime = 0;
 	g_PrevTime = 0;
+	s_PrevTime = 0;
 	itemIndex = 0;
 
 	// 게임 정보 구조체 초기화
@@ -142,7 +258,7 @@ void Init() {
 		//cTsPacket[i]= new CtoSPacket;
 		cTsPacket[i].life = INIT_LIFE;
 
-		for(int j = 0; j < 4; j++)
+		for (int j = 0; j < 4; j++)
 			cTsPacket[i].keyDown[j] = false;
 	}
 
@@ -156,16 +272,12 @@ void Init() {
 		sTcPacket.isVisible[i] = false;
 	}
 
-	// 아이템은 아직 초기화 안함
 	sTcPacket.time = 0;
 	sTcPacket.gameState = LobbyState;
 
 }
 
 void DeleteAll() {
-
-
-
 }
 
 // 사용자 정의 데이터 수신 함수(클라이언트로부터 입력받은 데이터 수신)
@@ -185,7 +297,7 @@ int RecvFromClient(SOCKET client_sock, short PlayerID)
 	getpeername(sock, (SOCKADDR *)&clientAddr, &addrLen);
 
 	// 데이터 통신에 사용할 변수
-	char buf[SIZE_CToSPACKET+1];
+	char buf[SIZE_CToSPACKET + 1];
 	ZeroMemory(buf, SIZE_CToSPACKET);
 
 	// 데이터 받기
@@ -201,6 +313,7 @@ int RecvFromClient(SOCKET client_sock, short PlayerID)
 	memcpy(&cTsPacket[playerID], buf, SIZE_CToSPACKET);
 
 	// 받은 데이터 출력 (테스트)
+//	printf("%d번 클라한테 받음\n", playerID);
 	//std::cout << std::endl
 	//	<< "w: " << cTsPacket[playerID]->keyDown[W] << " "
 	//	<< "a: " << cTsPacket[playerID]->keyDown[A] << " "
@@ -228,13 +341,13 @@ void SendToClient()
 	// 통신 버퍼에 패킷 메모리 복사
 	ZeroMemory(buf, SIZE_SToCPACKET);
 	memcpy(buf, &sTcPacket, SIZE_SToCPACKET);
-	
+
 	for (int i = 0; i < info.connectedP; i++)
 	{
 		retVal = send(clientSocks[i], buf, SIZE_SToCPACKET, 0);
 		if (retVal == SOCKET_ERROR)
 		{
-			std::cout << i << "번 클라 ";
+			printf("%d 번 클라 에러 \n",i);
 			err_display("send()");
 			continue;
 			//exit(1);
@@ -245,11 +358,11 @@ void SendToClient()
 
 void UpdatePosition(short playerID) {
 
-	BOOL tempKeyDown[4] = { 
-		cTsPacket[playerID].keyDown[W], 
-		cTsPacket[playerID].keyDown[A], 
-		cTsPacket[playerID].keyDown[S], 
-		cTsPacket[playerID].keyDown[D] 
+	BOOL tempKeyDown[4] = {
+		cTsPacket[playerID].keyDown[W],
+		cTsPacket[playerID].keyDown[A],
+		cTsPacket[playerID].keyDown[S],
+		cTsPacket[playerID].keyDown[D]
 	};
 
 	// 내 위치 계산 및 대입
@@ -261,21 +374,19 @@ void UpdatePosition(short playerID) {
 	}
 	DWORD currTime = GetTickCount();		// current time in millisec
 	DWORD elapsedTime = currTime - g_PrevTime;
-	g_PrevTime = currTime;
 	float eTime = (float)elapsedTime / 1000.f;		// ms to s
 
 	// 이 부분은 1초마다 아이템의 Visible을 true로 만들어주는 부분입니다
 	// 지금 eTime문제가 해결되면 위치가 변동될 수 있습니다!
 	// 시간이 일정하게 계속 갱신될 수 있는 곳에 넣어주시면 됩니다~~
 	// 공식은 현재시간 - 이전시간이 >= 1000ms(1초) 보다 크고, itemIndex가 맥스를 넘지 않을때 인덱스의 값을 true로 만들어주는거에요!
-	if (elapsedTime >= 1000 && itemIndex < MAX_ITEMS) {
-		EnterCriticalSection(&cs);
+	if (eTime >= 1.f && itemIndex < MAX_ITEMS) {
+		g_PrevTime = currTime;
 		info.items[itemIndex].isVisible = true;
 		itemIndex++;
-		LeaveCriticalSection(&cs);
 	}
 
-	printf("elapsed time: %f", eTime);		// 시간 확인 출력
+	//printf("elapsed time: %0.3f", eTime);		// 시간 확인 출력
 
 
 	// 힘 적용
@@ -285,13 +396,13 @@ void UpdatePosition(short playerID) {
 
 	float Accel_x = 0.f, Accel_y = 0.f;
 	float Vel_x = 0.f, Vel_y = 0.f;
-	
+
 
 	if (tempKeyDown[W])
 	{
 		//forceY += amount;
 		tempPlayers[playerID].pos.y = tempPlayers[playerID].pos.y + amount;
-	}	
+	}
 	if (tempKeyDown[A])
 	{
 		//forceX -= amount;
@@ -372,8 +483,9 @@ void UpdatePosition(short playerID) {
 	//std::cout << "tempPlayers 좌표 계산 후: "<< tempPlayers[playerID]->pos.x << ", " << tempPlayers[playerID]->pos.y << std::endl;
 
 	// 아이템 위치 계산 및 대입(종원)
-	
+
 }
+
 
 // 종원
 void P_I_CollisionCheck(short playerID)	//Player, Items
@@ -520,7 +632,7 @@ bool GameEndCheck()
 			sTcPacket.gameState = GameOverState;
 			return true;
 		}
-		else 
+		else
 			continue;
 	}
 
@@ -530,7 +642,7 @@ bool GameEndCheck()
 	if (info.gameTime >= GAMEOVER_TIME) {
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -559,10 +671,10 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
 			info.players[i].gameState = GamePlayState;
-			g_startTime = GetTickCount();
+			g_startTime = GetTickCount(); // 게임이 시작한 시간을 재는 곳
 		}
 	}
-		
+
 	std::cout << "[TCP 서버] 클라이언트 " << playerID << "접속" << std::endl;
 
 	// 전용소켓
@@ -581,19 +693,19 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		// 충돌로 인한 아이템 먹은 플레이어ID, 아이템 표시 여부 계산
 		P_I_CollisionCheck(playerID);	// ★ 종원
 		P_W_Collision();
-		
+
 		// 위에서 계산한 결과와 받은 데이터를 토대로 게임이 종료되었는지 체크
 		if (!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)
 			UpdatePosition(playerID);
-		
+
 		// ★ 계산한 값 info에 넣기 전, hSendEvt 이벤트 신호 대기
 		//WaitForSingleObject(hSendEvt, INFINITE);
-		
+
 		// 위에서 계산한 모든 갱신된 값을 info에 대입
 		// 캐릭터 위치
 		info.players[playerID].pos.x = tempPlayers[playerID].pos.x;
 		info.players[playerID].pos.y = tempPlayers[playerID].pos.y;
-		
+
 		// 테스트용 출력
 		//printf("info내 %d번 플레이어 좌표: %f, %f\n", playerID, info.players[playerID].pos.x, info.players[playerID].pos.y);
 		printf("%d 번 플레이어 계산 끝!\n", playerID);
@@ -605,7 +717,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 
 	// closesocket()		★ 현재 RecvFromClient()에서 recv() 오류나면 클로즈하게 되어있음 수정 필요
 	closesocket(client_sock);
-	
+
 	//★ 소멸 시 출력(테스트용)
 	printf("[TCP 서버] 클라이언트 %d 종료\n", playerID);
 
@@ -624,124 +736,44 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 
 // sTcPacket을 갱신하고 데이터를 전송하는 스레드 (이전 CalculateThread)
 DWORD WINAPI UpdatePackAndSend(LPVOID arg)
-{	
+{
 	// ★ 생성 시 출력(테스트용)
 	printf("UpdatePackAndSend 생성 (이전 CalculateThread)\n");
 
-	while(1)
+	while (1)
 	{
 		// sTcPacket에 갱신된 정보 넣기 전, hUpdateInfoEvt 이벤트 신호 대기
-		WaitForMultipleObjects(MAX_PLAYERS, hUpdateInfoEvt, TRUE ,30);
+		WaitForMultipleObjects(MAX_PLAYERS, hUpdateInfoEvt, TRUE, 30);
 
 		// 패킷에 갱신된 info 값들을 대입
 		sTcPacket.time = info.gameTime;		// ★ 게임 시간 계산은..?
 
 		sTcPacket.gameState = info.players[0].gameState;		// ★ 0번 클라이언트의 상태를 전송한다.(수정 필요할 듯)
-		
+
 		sTcPacket.p1Pos = info.players[0].pos;
 		sTcPacket.p2Pos = info.players[1].pos;
-		
+
 		for (int i = 0; i < MAX_ITEMS; ++i) {
 			sTcPacket.itemPos[i] = info.items[i].pos;
 			sTcPacket.playerID[i] = info.items[i].playerID;
 			sTcPacket.isVisible[i] = info.items[i].isVisible;
 		}
 
-		// SendToClient() 작성
-		SendToClient();
+		DWORD currTime = GetTickCount();		// current time in millisec
+		DWORD elapsedTime = currTime - s_PrevTime;
+		float eTime = (float)elapsedTime / 1000.f;
+		if (eTime >= 0.033f) { // 1000 = 1초, 1000 / 30 = 33...... 30프레임이에여 
+			s_PrevTime = currTime;
+			//printf("send : %.3f\n", eTime);
+			SendToClient();
+		}
+		else {
+			continue;
+		}
 
-		if(info.connectedP != 0)
+		if (info.connectedP != 0)
 			printf("데이터 보냈다.\n");
 	};
 
-	return 0;         
-}
-
-int main(int argc, char *argv[])
-{
-	int retval;		// 모든 return value를 받을 변수
-
-	// 구조체 초기화
-	Init();
-
-	// 윈속 초기화
-	WSADATA wsa;
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-		return 1;
-
-	// socket()
-	SOCKET listen_sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (listen_sock == INVALID_SOCKET) err_quit("socket()");
-
-	// SO_REUSEADDR 소켓 옵션 설정
-	BOOL optval = TRUE;
-	retval = setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, (char*)&optval, sizeof(optval));
-	if (retval == SOCKET_ERROR)	err_quit("setsockopt()");
-	
-
-	// bind()
-	SOCKADDR_IN serveraddr;
-	ZeroMemory(&serveraddr, sizeof(serveraddr));
-	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serveraddr.sin_port = htons(SERVERPORT);
-	retval = bind(listen_sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
-	if (retval == SOCKET_ERROR) err_quit("bind()");
-
-	// listen()
-	retval = listen(listen_sock, SOMAXCONN);
-	if (retval == SOCKET_ERROR) err_quit("listen()");
-
-	// 데이터 통신에 사용할 변수
-	SOCKET clientSock;
-	SOCKADDR_IN clientAddr;
-	int addrlen;
-
-	HANDLE hRecvAndUpdateInfo[2];	// 클라이언트 처리 스레드 핸들
-	HANDLE hUpdatePackAndSend;	// 연산 스레드 핸들
-
-	hUpdatePackAndSend = CreateThread(NULL, 0, UpdatePackAndSend, NULL, 0, NULL); // UpdatePackAndSend 생성 (이전 hCalculateThread)
-
-
-	// 테스트트트트트트트
-	printf("보낼 패킷 사이즈 : %zd\n", SIZE_SToCPACKET);
-
-	while(1)
-	{
-
-		while (info.connectedP < MAX_PLAYERS)		// ★ 이 조건은 다시 회의 후 결정
-		{
-			// accept()
-			addrlen = sizeof(clientAddr);
-			clientSock = accept(listen_sock, (SOCKADDR *)&clientAddr, &addrlen);
-			if (clientSock == INVALID_SOCKET) {
-				err_display("accept()");
-				break;
-			}
-	
-			// hRecvAndUpdateInfo 생성 (이전 hProccessClient)
-			hRecvAndUpdateInfo[info.connectedP] = CreateThread(NULL, 0, RecvAndUpdateInfo, (LPVOID)clientSock, 0, NULL);
-			// 두 개의 자동 리셋 이벤트 객체 생성(데이터 수신 이벤트, 갱신 이벤트)
-			hUpdateInfoEvt[info.connectedP] = CreateEvent(NULL, FALSE, FALSE, NULL);	// 비신호 상태(바로 시작o)
-			if (hUpdateInfoEvt == NULL) return 1;
-			//hUpdatePackAndSend = CreateThread(NULL, 0, UpdatePackAndSend, (LPVOID)clientSock, 0, NULL);
-			if (hRecvAndUpdateInfo[info.connectedP] == NULL) {
-				closesocket(clientSock);
-			}
-			else { 
-				CloseHandle(hRecvAndUpdateInfo[info.connectedP]);		//★ 스레드 핸들값을 바로 삭제할지도 논의 필요
-			}
-		}
-	}
-
-
-	// delete()
-	DeleteAll();
-
-	// closesocket()
-	closesocket(listen_sock);
-
-	// 윈속 종료
-	WSACleanup();
 	return 0;
 }

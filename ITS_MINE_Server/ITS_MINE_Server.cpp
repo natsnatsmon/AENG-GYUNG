@@ -394,7 +394,7 @@ void P_I_CollisionCheck(short playerID)	//Player, Items
 
 
 		if (!tempItems[i].isVisible)
-			break;
+			continue;
 		else if (tempItems[i].velocity == 0.f)
 		{
 			if (sqrtf(x * x + y * y) < (PLAYER_SIZE + ITEM_SIZE) / 2.f)
@@ -465,6 +465,48 @@ void P_W_Collision()
 	if (tempPlayers[player2].pos.y < -340.f)
 		tempPlayers[player2].pos.y = -340.f;
 }
+
+void B_W_CollisionAndUpdate()// 총알 이동, 총알  벽 충돌처리.
+{
+	for (int i = 0; i < MAX_ITEMS; i++)
+	{
+		if (tempItems[i].playerID != nullPlayer)
+		{
+			tempItems[i].pos.x += tempItems[i].direction.x * tempItems[i].velocity;
+			tempItems[i].pos.y += tempItems[i].direction.y * tempItems[i].velocity;
+			if (tempItems[i].pos.x > 300.f)
+			{
+				tempItems[i].direction = { 0.f, 0.f };
+				tempItems[i].isVisible = false;
+				tempItems[i].playerID = nullPlayer;
+				tempItems[i].velocity = 0.f;
+			}
+			else if (tempItems[i].pos.x < -400.f)
+			{
+				tempItems[i].direction = { 0.f, 0.f };
+				tempItems[i].isVisible = false;
+				tempItems[i].playerID = nullPlayer;
+				tempItems[i].velocity = 0.f;
+			}
+			else if (tempItems[i].pos.y > 350.f)
+			{
+				tempItems[i].direction = { 0.f, 0.f };
+				tempItems[i].isVisible = false;
+				tempItems[i].playerID = nullPlayer;
+				tempItems[i].velocity = 0.f;
+			}
+			else if (tempItems[i].pos.y < -350.f)
+			{
+				tempItems[i].direction = { 0.f, 0.f };
+				tempItems[i].isVisible = false;
+				tempItems[i].playerID = nullPlayer;
+				tempItems[i].velocity = 0.f;
+			}
+
+		}
+	}
+}
+
 
 // 하연
 bool GameEndCheck()

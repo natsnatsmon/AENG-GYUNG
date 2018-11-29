@@ -35,6 +35,7 @@ SOCKADDR_IN serveraddr;
 
 ScnMgr *g_ScnMgr = NULL;
 DWORD g_PrevTime = 0;
+DWORD c_PrevTime = 0;
 
 int g_Shoot = SHOOT_NONE;
 
@@ -93,6 +94,7 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 // 구조체 초기화 함수
 void Init() {
+	c_PrevTime = 0;
 
 	// 아이템 구조체 초기화
 	for (int i = 0; i < MAX_ITEMS; ++i) {
@@ -239,10 +241,6 @@ void RenderScene(void)
 	g_ScnMgr->RenderScene();
 
 	glutSwapBuffers();
-
-
-	// 이거 전송하는게 넘 빨라서 눈으로 안보여서 잠시 넣은거에여!!!
-
 }
 
 void Idle(void)
@@ -265,11 +263,15 @@ void KeyDownInput(unsigned char key, int x, int y)
 		else {
 			cout << "connect() 완료!\n";
 
-			// 만약 connect()가 성공했다면~(테스트)
+			if (c_PrevTime == 0)
+			{
+				c_PrevTime = GetTickCount();
+			}
+
+			//// 만약 connect()가 성공했다면~(테스트)
 			SendToServer(sock);
 
 			info.gameState = LobbyState;
-			cout << info.gameState;
 		}
 	}
 
@@ -356,13 +358,22 @@ DWORD WINAPI ProccessClient(LPVOID arg) {
 	while (1)
 	{
 		if (info.gameState == GamePlayState || info.gameState == LobbyState) {
-			//Sleep(200);
-			
-			// 데이터 송신
-			SendToServer(sock);
-
 			// 데이터 수신
 			RecvFromServer(sock);
+
+			// 데이터 송신
+					// SendToClient() 작성
+			DWORD currTime = GetTickCount();		// current time in millisec
+			DWORD elapsedTime = currTime - c_PrevTime;
+			float eTime = (float)elapsedTime / 1000.f;
+			if (eTime >= 0.033f) { // 1000 = 1초, 1000 / 30 = 33...... 30프레임이에여 
+				c_PrevTime = currTime;
+				printf("%.3f\n", eTime);
+			}
+			else {
+				continue;
+			}
+
 		}
 	}
 

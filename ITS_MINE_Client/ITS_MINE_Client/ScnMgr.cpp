@@ -92,8 +92,11 @@ void ScnMgr::RenderScene()
 		if (g_Seq > 4)
 			g_Seq = 0;
 
-		for (int playerID = 0; playerID < MAX_PLAYERS; ++playerID) {
-			m_Renderer->DrawTextureRectSeqXY(info.playersPos[playerID].x, info.playersPos[playerID].y, 1.f, R_PLAYER * 2, R_PLAYER * 2, 1, 1, 1, 1, m_PlayerTex[playerID], seqX, seqY, 4, 1);
+		for (int i = 0; i < MAX_PLAYERS; ++i) {
+			m_Renderer->DrawTextureRectSeqXY(info.playersPos[i].x, info.playersPos[i].y, 1.f, R_PLAYER * 2, R_PLAYER * 2, 1, 1, 1, 1, m_PlayerTex[i], seqX, seqY, 4, 1);
+			if (i == 0) {
+				m_Renderer->DrawTextureRect(info.playersPos[i].x, info.playersPos[i].y + 50.f, 1.f, R_PLAYER * 2, R_PLAYER * 2, 1, 1, 1, 1, m_BulletTex[i]);
+			}
 		}
 
 		//// 아이템(사과 + 총알) 그리기

@@ -35,7 +35,6 @@ SOCKADDR_IN serveraddr;
 
 ScnMgr *g_ScnMgr = NULL;
 DWORD g_PrevTime = 0;
-DWORD c_PrevTime = 0;
 
 int g_Shoot = SHOOT_NONE;
 
@@ -94,79 +93,42 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 // 구조체 초기화 함수
 void Init() {
-	c_PrevTime = 0;
-
-	// 아이템 구조체 초기화
-	for (int i = 0; i < MAX_ITEMS; ++i) {
-		//info.items[i] = new CItemObj;
-		info.items[i].pos.x = 0;
-		info.items[i].pos.y = 0;
-		info.items[i].playerID = nullPlayer;
-		info.items[i].isVisible = false;
-	}
-
-	// C -> S Packet 구조체 초기화
-	for (int i = 0; i < 4; ++i)
-		cTsPacket.keyDown[i] = false;
-	cTsPacket.life = 5;
-
-	// S -> C Packet 구조체 초기화
-	sTcPacket.p1Pos.x = INIT_POS;
-	sTcPacket.p1Pos.y = INIT_POS;
-	sTcPacket.p2Pos.x = INIT_POS;
-	sTcPacket.p2Pos.y = INIT_POS;
-
-	for (int i = 0; i < MAX_ITEMS; ++i) {
-		sTcPacket.itemPos[i].x = INIT_POS;
-		sTcPacket.itemPos[i].y = INIT_POS;
-		sTcPacket.playerID[i] = nullPlayer;
-		sTcPacket.isVisible[i] = false;
-
-	}
-
-	sTcPacket.time = 0;
-	sTcPacket.gameState = MainState;
-
 	// 게임 정보 구조체 초기화
 	info.gameState = MainState;
 	info.gameTime = 0;
 	for (int i = 0; i < MAX_PLAYERS; ++i)
-		info.playersPos[i] = { 0, };
+		info.playersPos[i] = { INIT_POS, INIT_POS };
 	for (int i = 0; i < MAX_ITEMS; ++i) {
-		info.items[i].pos = { 0, 0 };
-		info.items[i].isVisible = 0;
+		info.items[i].pos = { INIT_POS, INIT_POS };
+		info.items[i].isVisible = false;
 		info.items[i].playerID = nullPlayer;
 	}
-	
+	   
+	// C -> S Packet 구조체 초기화
+	cTsPacket = { {false, false, false, false}, INIT_LIFE };
 
-	// 테스트용!!!
-	info.gameState = MainState;
+	sTcPacket.gameState = LobbyState;
+	sTcPacket.time = 0;
 
-	info.playersPos[0].x = 0.f; 
-	info.playersPos[0].y = 10.f;
-	info.playersPos[1].x = 22.f;
-	info.playersPos[1].y = -38.f;
+	sTcPacket.p1Pos = { INIT_POS, INIT_POS };
+	sTcPacket.p2Pos = { INIT_POS, INIT_POS };
 
+	for (int i = 0; i < MAX_ITEMS; ++i) {
+		sTcPacket.itemPos[i] = info.items[i].pos;
+		sTcPacket.playerID[i] = nullPlayer;
+		sTcPacket.isVisible[i] = false;
+	}
 
-	info.items[0].pos.x = 30.f;
-	info.items[0].pos.y = 20.f;
-	info.items[0].playerID = nullPlayer;
-	info.items[0].isVisible = true;
-
-	info.items[1].pos.x = -70.f;
-	info.items[1].pos.y = -72.f;
-	info.items[1].playerID = player1;
-	info.items[1].isVisible = true;
-
-	info.items[2].pos.x = 143.f;
-	info.items[2].pos.y = 153.f;
-	info.items[2].playerID = player2;
-	info.items[2].isVisible = true;
-
-	info.items[3].pos.x = -111.f;
-	info.items[3].pos.y = 111.f;
-	info.items[3].playerID = nullPlayer;
-	info.items[3].isVisible = true;
+	// 패킷 사이즈 확인
+	if (sizeof(cTsPacket) != SIZE_CToSPACKET) {
+		printf("define된 c -> s 패킷의 크기가 다릅니다!\n");
+		printf("cTsPacket의 크기 : %zd\t SIZE_CToSPACKET의 크기 : %d\n", sizeof(cTsPacket), SIZE_CToSPACKET);
+		return;
+	}
+	if (sizeof(sTcPacket) != SIZE_SToCPACKET) {
+		printf("define된 s -> c 패킷의 크기가 다릅니다!\n");
+		printf("sTcPacket의 크기 : %zd\t SIZE_SToCPACKET의 크기 : %d\n", sizeof(sTcPacket), SIZE_SToCPACKET);
+	}
 }
 
 
@@ -261,14 +223,9 @@ void KeyDownInput(unsigned char key, int x, int y)
 		if (retval == SOCKET_ERROR)
 			err_quit("connect()");
 		else {
-			cout << "connect() 완료!\n";
+			std::cout << "connect() 완료!\n";
 
-			if (c_PrevTime == 0)
-			{
-				c_PrevTime = GetTickCount();
-			}
-
-			//// 만약 connect()가 성공했다면~(테스트)
+			// 만약 connect()가 성공했다면~(테스트)
 			SendToServer(sock);
 
 			info.gameState = LobbyState;
@@ -313,31 +270,8 @@ void KeyUpInput(unsigned char key, int x, int y)
 	}
 }
 
-// ★ 총을 쏘는게 없으니 없애도 되지 않을까요? 논의 필요
-//void SpecialKeyInput(int key, int x, int y)
-//{
-//	switch (key)
-//	{
-//	case GLUT_KEY_UP:
-//		g_Shoot = SHOOT_UP;
-//		break;
-//	case GLUT_KEY_DOWN:
-//		g_Shoot = SHOOT_DOWN;
-//		break;
-//	case GLUT_KEY_RIGHT:
-//		g_Shoot = SHOOT_RIGHT;
-//		break;
-//	case GLUT_KEY_LEFT:
-//		g_Shoot = SHOOT_LEFT;
-//		break;
-//	}
-//}
-//void SpecialKeyUpInput(int key, int x, int y)
-//{
-//	g_Shoot = SHOOT_NONE;
-//}
-
-
+// 임시변수
+bool q = true;
 DWORD WINAPI ProccessClient(LPVOID arg) {
 	printf("클라이언트 통신 스레드 생성\n");
 
@@ -358,22 +292,11 @@ DWORD WINAPI ProccessClient(LPVOID arg) {
 	while (1)
 	{
 		if (info.gameState == GamePlayState || info.gameState == LobbyState) {
+			// 데이터 송신
+			SendToServer(sock);
+
 			// 데이터 수신
 			RecvFromServer(sock);
-
-			// 데이터 송신
-					// SendToClient() 작성
-			DWORD currTime = GetTickCount();		// current time in millisec
-			DWORD elapsedTime = currTime - c_PrevTime;
-			float eTime = (float)elapsedTime / 1000.f;
-			if (eTime >= 0.033f) { // 1000 = 1초, 1000 / 30 = 33...... 30프레임이에여 
-				c_PrevTime = currTime;
-				printf("%.3f\n", eTime);
-			}
-			else {
-				continue;
-			}
-
 		}
 	}
 
@@ -388,7 +311,7 @@ int main(int argc, char **argv)
 	// Initialize GL things
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowPosition(0, 0);
+	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(900, 800);
 	glutCreateWindow("Game Software Engineering KPU");
 
@@ -407,8 +330,6 @@ int main(int argc, char **argv)
 	glutKeyboardFunc(KeyDownInput);
 	glutKeyboardUpFunc(KeyUpInput);
 	glutMouseFunc(MouseInput);
-	//glutSpecialFunc(SpecialKeyInput);
-	//glutSpecialUpFunc(SpecialKeyUpInput);
 
 	glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
 

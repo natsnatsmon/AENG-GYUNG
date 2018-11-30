@@ -27,9 +27,11 @@ SItemObj tempItems[MAX_PLAYERS];
 SOCKET clientSocks[2];
 
 // 시간 저장 변수
-DWORD g_startTime = 0;
-DWORD g_PrevTime = 0;
-DWORD s_PrevTime = 0; // server의 시간이란 의미로 s_를......... .... PrevTime 겹치길래.....ㅜ
+DWORD game_startTime = 0;
+DWORD game_PrevTime = 0;
+DWORD server_PrevTime = 0; // server의 시간이란 의미로 s_를......... .... PrevTime 겹치길래.....ㅜ
+DWORD item_PrevTime = 0;
+DWORD send_PrevTime = 0;
 
 // 서버를 떠난 클라이언트ID
 short leaveID = -1;
@@ -202,9 +204,11 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 // 초기화 함수
 void Init() {
-	g_startTime = 0;
-	g_PrevTime = 0;
-	s_PrevTime = 0;
+	game_startTime = 0;
+	game_PrevTime = 0;
+	server_PrevTime = 0;
+	item_PrevTime = 0;
+	send_PrevTime = 0;
 
 	itemIndex = 0;
 
@@ -354,14 +358,14 @@ void UpdatePosition(short playerID) {
 
 	// 내 위치 계산 및 대입
 	// ★ elapsed time 계산
-	if (g_PrevTime == 0)	// g_PrevTime은 0이고 currTime은 시작부터 시간을 재고 있기때문에 처음 elapsedTime을 구할 때 차이가 너무 많아 나버릴 수 있다.
+	if (game_PrevTime == 0)	// g_PrevTime은 0이고 currTime은 시작부터 시간을 재고 있기때문에 처음 elapsedTime을 구할 때 차이가 너무 많아 나버릴 수 있다.
 	{
-		g_PrevTime = GetTickCount();
+		game_PrevTime = GetTickCount();
 		return;
 	}
 	DWORD currTime = GetTickCount();		// current time in millisec
-	DWORD elapsedTime = currTime - g_PrevTime;
-	g_PrevTime = currTime;
+	DWORD elapsedTime = currTime - game_PrevTime;
+	game_PrevTime = currTime;
 	float eTime = (float)elapsedTime / 1000.f;		// ms to s
 
 	// 이 부분은 1초마다 아이템의 Visible을 true로 만들어주는 부분입니다
@@ -626,7 +630,7 @@ bool GameEndCheck()
 
 	// TimeCheck 작성
 	DWORD currTime = GetTickCount();		// current time in millisec
-	info.gameTime = currTime - g_startTime;
+	info.gameTime = currTime - game_startTime;
 	if (info.gameTime >= GAMEOVER_TIME) {
 		return true;
 	}
@@ -659,7 +663,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
 			info.players[i].gameState = GamePlayState;
-			g_startTime = GetTickCount();
+			game_startTime = GetTickCount();
 		}
 	}
 

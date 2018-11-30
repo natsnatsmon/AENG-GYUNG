@@ -367,16 +367,26 @@ void UpdatePosition(short playerID) {
 	DWORD elapsedTime = currTime - game_PrevTime;
 	game_PrevTime = currTime;
 	float eTime = (float)elapsedTime / 1000.f;		// ms to s
+	
 
+	// 아이템 1초마다 스폰시켜주는 부분
+	if (item_PrevTime == 0)	// g_PrevTime은 0이고 currTime은 시작부터 시간을 재고 있기때문에 처음 elapsedTime을 구할 때 차이가 너무 많아 나버릴 수 있다.
+	{
+		item_PrevTime = GetTickCount();
+		return;
+	}
+	DWORD item_currTime = GetTickCount();
+	DWORD item_elapsedTime = item_currTime - item_PrevTime;
+	//float item_eTime = (float)item_elapsedTime / 1000.f;
 	// 이 부분은 1초마다 아이템의 Visible을 true로 만들어주는 부분입니다
 	// 지금 eTime문제가 해결되면 위치가 변동될 수 있습니다!
 	// 시간이 일정하게 계속 갱신될 수 있는 곳에 넣어주시면 됩니다~~
 	// 공식은 현재시간 - 이전시간이 >= 1000ms(1초) 보다 크고, itemIndex가 맥스를 넘지 않을때 인덱스의 값을 true로 만들어주는거에요!
-	if (elapsedTime >= 1000 && itemIndex < MAX_ITEMS) {
-		EnterCriticalSection(&cs);
+	if (item_elapsedTime >= 1000 && itemIndex < MAX_ITEMS) {
+		item_PrevTime = item_currTime;
 		info.items[itemIndex].isVisible = true;
 		itemIndex++;
-		LeaveCriticalSection(&cs);
+		printf("%d번 아이템 켰다\n", itemIndex);
 	}
 
 	//printf("elapsed time: %f", eTime);		// 시간 확인 출력

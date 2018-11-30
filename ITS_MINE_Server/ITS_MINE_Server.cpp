@@ -1,19 +1,16 @@
-//
-// [ 서버 알고리즘 ]
-// RecvAndUpdateInfo에서 데이터를 받아서 충돌체크 및 포지션 갱신 후 대기(hSendEvt 신호 대기)
-// -> UpdatePackAndSend에서 갱신된 데이터들을 패킷구조체에 저장한 후 패킷 전송 후 SetEvent하고 대기(hUpdateInfoEvt 신호 대기)
-// -> 다시 돌아와 RecvAndUpdateInfo에서 아까 갱신한 데이터들을 info 구조체에 한꺼번에 넣어준 후(즉, 이 때만 info 정보에 접근함) SetEvent
-// -> 위 과정 반복
-
 #define _WINSOCK_DEPRECATED_NO_WARNINGS		// inet_addr errror 
 #pragma comment(lib, "ws2_32")
 
 #include <winsock2.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "Global.h"
+#include <iostream>
 
 
 // 동기화를 위한 이벤트 객체 
 HANDLE hUpdateInfoEvt[2];		// 데이터를 수신하여 계산 및 Info 갱신하는 이벤트 객체 (이전 RecvEvt 객체)
+HANDLE hSendEvt; // <- 이거 안쓰면 삭제할까요??
 
 // 서버 구동에 사용할 변수(게임 관련 정보)
 SInfo info;
@@ -34,12 +31,12 @@ DWORD g_startTime = 0;
 DWORD g_PrevTime = 0;
 DWORD s_PrevTime = 0; // server의 시간이란 의미로 s_를......... .... PrevTime 겹치길래.....ㅜ
 
-
 // 서버를 떠난 클라이언트ID
 short leaveID = -1;
 int itemIndex = 0;
 
 CRITICAL_SECTION cs;
+
 void err_quit(const char *msg);
 void err_display(const char *msg);
 int recvn(SOCKET s, char *buf, int len, int flags);
@@ -82,7 +79,7 @@ int main(int argc, char *argv[])
 	BOOL optval = TRUE;
 	retval = setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, (char*)&optval, sizeof(optval));
 	if (retval == SOCKET_ERROR)	err_quit("setsockopt()");
-	
+
 
 	// bind()
 	SOCKADDR_IN serveraddr;
@@ -106,17 +103,17 @@ int main(int argc, char *argv[])
 	HANDLE hUpdatePackAndSend;	// 연산 스레드 핸들
 
 	hUpdatePackAndSend = CreateThread(NULL, 0, UpdatePackAndSend, NULL, 0, NULL); // UpdatePackAndSend 생성 (이전 hCalculateThread)
-	
-		// SendToClient() 작성
-	if (s_PrevTime == 0)
-	{
-		s_PrevTime = GetTickCount();
-	}
+
+	hSendEvt = CreateEvent(NULL, FALSE, TRUE, NULL);	// 신호 상태(바로 시작x)
+
+	//hSendEvt[0] = CreateEvent(NULL, FALSE, TRUE, NULL);	// 신호 상태(바로 시작x)
+	//hSendEvt[1] = CreateEvent(NULL, FALSE, TRUE, NULL);	// 신호 상태(바로 시작x)
+	//hUpdateInfoEvt = CreateEvent(NULL, FALSE, FALSE, NULL);	// 비신호 상태(바로 시작o)
 
 	// 테스트트트트트트트
-	printf("보낼 패킷 사이즈 : %zd\n", SIZE_SToCPACKET);
+	printf("보낼 패킷 사이즈 : %d\n", SIZE_SToCPACKET);
 
-	while(1)
+	while (1)
 	{
 
 		while (info.connectedP < MAX_PLAYERS)		// ★ 이 조건은 다시 회의 후 결정
@@ -128,17 +125,17 @@ int main(int argc, char *argv[])
 				err_display("accept()");
 				break;
 			}
-	
+
 			// hRecvAndUpdateInfo 생성 (이전 hProccessClient)
 			hRecvAndUpdateInfo[info.connectedP] = CreateThread(NULL, 0, RecvAndUpdateInfo, (LPVOID)clientSock, 0, NULL);
 			// 두 개의 자동 리셋 이벤트 객체 생성(데이터 수신 이벤트, 갱신 이벤트)
 			hUpdateInfoEvt[info.connectedP] = CreateEvent(NULL, FALSE, FALSE, NULL);	// 비신호 상태(바로 시작o)
-			if (hUpdateInfoEvt == NULL) return 1;
+			//if (hUpdateInfoEvt == NULL) return 1;
 			//hUpdatePackAndSend = CreateThread(NULL, 0, UpdatePackAndSend, (LPVOID)clientSock, 0, NULL);
 			if (hRecvAndUpdateInfo[info.connectedP] == NULL) {
 				closesocket(clientSock);
 			}
-			else { 
+			else {
 				CloseHandle(hRecvAndUpdateInfo[info.connectedP]);		//★ 스레드 핸들값을 바로 삭제할지도 논의 필요
 			}
 		}
@@ -155,7 +152,6 @@ int main(int argc, char *argv[])
 	WSACleanup();
 	return 0;
 }
-
 
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char *msg)
@@ -204,11 +200,12 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 	return (len - left);
 }
 
-// 구조체 초기화 함수
+// 초기화 함수
 void Init() {
 	g_startTime = 0;
 	g_PrevTime = 0;
 	s_PrevTime = 0;
+
 	itemIndex = 0;
 
 	// 게임 정보 구조체 초기화
@@ -217,67 +214,62 @@ void Init() {
 
 	// 게임 정보 구조체 내의 플레이어 구조체 정보 및 임시플레이어 구조체 정보 초기화
 	for (int i = 0; i < MAX_PLAYERS; ++i) {
-		info.players[i].gameState = LobbyState;
-		info.players[i].pos.x = INIT_POS;
-		info.players[i].pos.y = INIT_POS;
-		info.players[i].life = INIT_LIFE;
-		for (int j = 0; j < 4; ++j)
-			info.players[i].keyDown[j] = false;
+		info.players[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE};
 
-		tempPlayers[i].gameState = info.players[i].gameState;
-		tempPlayers[i].pos.x = info.players[i].pos.x;
-		tempPlayers[i].pos.y = info.players[i].pos.y;
-		tempPlayers[i].life = info.players[i].life;
-		for (int j = 0; j < 4; ++j)
-			tempPlayers[i].keyDown[j] = info.players[i].keyDown[j];
+		tempPlayers[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
 	}
 
 	// 게임 정보 구조체 내의 아이템 구조체 정보 및 임시아이템 구조체 정보 초기화
 	for (int i = 0; i < MAX_ITEMS; ++i) {
-		// 아이템의 좌표를 40 ~ 760 사이로 랜덤하게 놓기
-		info.items[i].pos.x = (float)(rand() % 720 + (R_ITEM * 2)) - HALF_WIDTH;
-		info.items[i].pos.y = (float)(rand() % 720 + (R_ITEM * 2)) - HALF_WIDTH;
-		info.items[i].direction.x = 0;
-		info.items[i].direction.y = 0;
-		info.items[i].velocity = 0.f;
-		info.items[i].playerID = nullPlayer;
-		info.items[i].isVisible = false;
+		float randX = (float)(rand() % PLAY_WIDTH) - PLAY_X;
+		float randY = (float)(rand() % PLAY_WIDTH) - PLAY_Y;
 
-		tempItems[i].pos.x = info.items[i].pos.x;
-		tempItems[i].pos.y = info.items[i].pos.y;
-		tempItems[i].direction.x = info.items[i].direction.x;
-		tempItems[i].direction.y = info.items[i].direction.y;
-		tempItems[i].velocity = info.items[i].velocity;
-		tempItems[i].playerID = info.items[i].playerID;
-		tempItems[i].isVisible = info.items[i].isVisible;
+		info.items[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
+
+		tempItems[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
 	}
 
 	// C -> S Packet 구조체 초기화
 	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
-		//cTsPacket[i]= new CtoSPacket;
-		cTsPacket[i].life = INIT_LIFE;
-
-		for (int j = 0; j < 4; j++)
-			cTsPacket[i].keyDown[j] = false;
+		cTsPacket[i] = { {false, false, false, false}, INIT_LIFE };
 	}
 
 	// S -> C Packet 구조체 초기화
+	sTcPacket.gameState = LobbyState;
+	sTcPacket.time = 0;
+
 	sTcPacket.p1Pos = { INIT_POS, INIT_POS };
 	sTcPacket.p2Pos = { INIT_POS, INIT_POS };
 
 	for (int i = 0; i < MAX_ITEMS; ++i) {
-		sTcPacket.itemPos[i] = { INIT_POS, INIT_POS };
+		sTcPacket.itemPos[i] = info.items[i].pos;
 		sTcPacket.playerID[i] = nullPlayer;
 		sTcPacket.isVisible[i] = false;
 	}
 
-	sTcPacket.time = 0;
-	sTcPacket.gameState = LobbyState;
+	// 패킷 사이즈 확인
+	if (sizeof(cTsPacket[0]) != SIZE_CToSPACKET) {
+		printf("define된 c -> s 패킷의 크기가 다릅니다!\n");
+		printf("cTsPacket의 크기 : %zd\t SIZE_CToSPACKET의 크기 : %d\n", sizeof(cTsPacket), SIZE_CToSPACKET);
+		return;
+	}
+	if (sizeof(sTcPacket) != SIZE_SToCPACKET) {
+		printf("define된 s -> c 패킷의 크기가 다릅니다!\n");
+		printf("sTcPacket의 크기 : %zd\t SIZE_SToCPACKET의 크기 : %d\n", sizeof(sTcPacket), SIZE_SToCPACKET);
+	}
 
+
+	// 테스트 출력입니다.
+	for (int i = 0; i < 10; ++i) {
+		printf("item[%d].x = %f, y = %f\n", i, sTcPacket.itemPos[i].x, sTcPacket.itemPos[i].y);
+	}
 }
 
 void DeleteAll() {
+
+
+
 }
 
 // 사용자 정의 데이터 수신 함수(클라이언트로부터 입력받은 데이터 수신)
@@ -313,7 +305,6 @@ int RecvFromClient(SOCKET client_sock, short PlayerID)
 	memcpy(&cTsPacket[playerID], buf, SIZE_CToSPACKET);
 
 	// 받은 데이터 출력 (테스트)
-//	printf("%d번 클라한테 받음\n", playerID);
 	//std::cout << std::endl
 	//	<< "w: " << cTsPacket[playerID]->keyDown[W] << " "
 	//	<< "a: " << cTsPacket[playerID]->keyDown[A] << " "
@@ -328,10 +319,6 @@ int RecvFromClient(SOCKET client_sock, short PlayerID)
 // 사용자 정의 데이터 송신 함수(클라이언트에게 갱신된 데이터 송신)
 void SendToClient()
 {
-	// 테스트용 출력
-	// std::cout << "SendToClient() 호출" << std::endl;
-	//Sleep(200);
-
 	int retVal;
 	char buf[SIZE_SToCPACKET];
 
@@ -347,7 +334,7 @@ void SendToClient()
 		retVal = send(clientSocks[i], buf, SIZE_SToCPACKET, 0);
 		if (retVal == SOCKET_ERROR)
 		{
-			printf("%d 번 클라 에러 \n",i);
+			std::cout << i << "번 클라 ";
 			err_display("send()");
 			continue;
 			//exit(1);
@@ -374,25 +361,27 @@ void UpdatePosition(short playerID) {
 	}
 	DWORD currTime = GetTickCount();		// current time in millisec
 	DWORD elapsedTime = currTime - g_PrevTime;
+	g_PrevTime = currTime;
 	float eTime = (float)elapsedTime / 1000.f;		// ms to s
 
 	// 이 부분은 1초마다 아이템의 Visible을 true로 만들어주는 부분입니다
 	// 지금 eTime문제가 해결되면 위치가 변동될 수 있습니다!
 	// 시간이 일정하게 계속 갱신될 수 있는 곳에 넣어주시면 됩니다~~
 	// 공식은 현재시간 - 이전시간이 >= 1000ms(1초) 보다 크고, itemIndex가 맥스를 넘지 않을때 인덱스의 값을 true로 만들어주는거에요!
-	if (eTime >= 1.f && itemIndex < MAX_ITEMS) {
-		g_PrevTime = currTime;
+	if (elapsedTime >= 1000 && itemIndex < MAX_ITEMS) {
+		EnterCriticalSection(&cs);
 		info.items[itemIndex].isVisible = true;
 		itemIndex++;
+		LeaveCriticalSection(&cs);
 	}
 
-	//printf("elapsed time: %0.3f", eTime);		// 시간 확인 출력
+	//printf("elapsed time: %f", eTime);		// 시간 확인 출력
 
 
 	// 힘 적용
 	float forceX = 0.f;
 	float forceY = 0.f;
-	float amount = 0.2f;
+	float amount = 5.f;
 
 	float Accel_x = 0.f, Accel_y = 0.f;
 	float Vel_x = 0.f, Vel_y = 0.f;
@@ -486,11 +475,10 @@ void UpdatePosition(short playerID) {
 
 }
 
-
 // 종원
 void P_I_CollisionCheck(short playerID)	//Player, Items
 {
-	int x = 0, y = 0;
+	float x = 0, y = 0;
 	for (int i = 0; i < 99; i++)
 	{
 		if (playerID == player1)
@@ -671,7 +659,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
 			info.players[i].gameState = GamePlayState;
-			g_startTime = GetTickCount(); // 게임이 시작한 시간을 재는 곳
+			g_startTime = GetTickCount();
 		}
 	}
 
@@ -699,19 +687,24 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 			UpdatePosition(playerID);
 
 		// ★ 계산한 값 info에 넣기 전, hSendEvt 이벤트 신호 대기
-		//WaitForSingleObject(hSendEvt, INFINITE);
+		WaitForSingleObject(hSendEvt, 20);
+		//WaitForMultipleObjects(MAX_PLAYERS, hSendEvt, TRUE, 30);
 
 		// 위에서 계산한 모든 갱신된 값을 info에 대입
 		// 캐릭터 위치
 		info.players[playerID].pos.x = tempPlayers[playerID].pos.x;
 		info.players[playerID].pos.y = tempPlayers[playerID].pos.y;
 
+
 		// 테스트용 출력
 		//printf("info내 %d번 플레이어 좌표: %f, %f\n", playerID, info.players[playerID].pos.x, info.players[playerID].pos.y);
 		printf("%d 번 플레이어 계산 끝!\n", playerID);
 
 		// 이 곳에 hUpdateInfoEvt 이벤트 신호 해주기
-		SetEvent(hUpdateInfoEvt[playerID]);
+		//SetEvent(hUpdateInfoEvt[playerID]);
+		SetEvent(hUpdateInfoEvt);
+
+
 	}
 
 
@@ -743,7 +736,8 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 	while (1)
 	{
 		// sTcPacket에 갱신된 정보 넣기 전, hUpdateInfoEvt 이벤트 신호 대기
-		WaitForMultipleObjects(MAX_PLAYERS, hUpdateInfoEvt, TRUE, 30);
+		WaitForMultipleObjects(MAX_PLAYERS, hUpdateInfoEvt, TRUE, 20);
+		//WaitForSingleObject(hUpdateInfoEvt, 30);
 
 		// 패킷에 갱신된 info 값들을 대입
 		sTcPacket.time = info.gameTime;		// ★ 게임 시간 계산은..?
@@ -759,21 +753,16 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 			sTcPacket.isVisible[i] = info.items[i].isVisible;
 		}
 
-		DWORD currTime = GetTickCount();		// current time in millisec
-		DWORD elapsedTime = currTime - s_PrevTime;
-		float eTime = (float)elapsedTime / 1000.f;
-		if (eTime >= 0.033f) { // 1000 = 1초, 1000 / 30 = 33...... 30프레임이에여 
-			s_PrevTime = currTime;
-			//printf("send : %.3f\n", eTime);
-			SendToClient();
-		}
-		else {
-			continue;
-		}
+		// SendToClient() 작성
+		SendToClient();
 
 		if (info.connectedP != 0)
 			printf("데이터 보냈다.\n");
+
+		SetEvent(hSendEvt);
+
 	};
 
 	return 0;
 }
+

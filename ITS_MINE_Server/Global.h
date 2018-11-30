@@ -14,14 +14,16 @@
 #define MAX_ITEMS 100
 #define MAX_POS 720
 
-#define HALF_WIDTH 450.f // 화면 반지름
+#define PLAY_WIDTH 720 // 플레이 장소 크기
+#define PLAY_X 410,f //  x값 한계치 - 랜덤 위치 놓을때 사용
+#define PLAY_Y 360.f // y값 한계치 - 랜덤 위치 놓을때 사용
 #define R_PLAYER 40.f // 플레이어 반지름
 #define R_ITEM 20.f // 아이템 반지름
 
 #define INIT_POS -100.f
 #define INIT_LIFE 5
-#define GAMEOVER_TIME 18300
-// 183000 = 183초 3초는 준비시간정도로
+#define GAMEOVER_TIME 30300
+// 103000 = 103초 3초는 준비시간정도로
 
 #define W 0
 #define A 1

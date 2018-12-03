@@ -265,9 +265,9 @@ void Init() {
 
 
 	// 테스트 출력입니다.
-	for (int i = 0; i < 10; ++i) {
-		printf("item[%d].x = %f, y = %f\n", i, sTcPacket.itemPos[i].x, sTcPacket.itemPos[i].y);
-	}
+	//for (int i = 0; i < 10; ++i) {
+	//	printf("item[%d].x = %f, y = %f\n", i, sTcPacket.itemPos[i].x, sTcPacket.itemPos[i].y);
+	//}
 }
 
 void DeleteAll() {
@@ -338,7 +338,7 @@ void SendToClient()
 		retVal = send(clientSocks[i], buf, SIZE_SToCPACKET, 0);
 		if (retVal == SOCKET_ERROR)
 		{
-			std::cout << i << "번 클라 ";
+			printf("%d번 클라 ", i);
 			err_display("send()");
 			continue;
 			//exit(1);
@@ -422,66 +422,66 @@ void UpdatePosition(short playerID) {
 		tempPlayers[playerID].pos.x = tempPlayers[playerID].pos.x + amount;
 	}
 
-	// calc accel
-	Accel_x = forceX / MASS;
-	Accel_y = forceY / MASS;
+	//// calc accel
+	//Accel_x = forceX / MASS;
+	//Accel_y = forceY / MASS;
 
-	// calc vel
-	Vel_x = Vel_x + Accel_x * eTime;
-	Vel_y = Vel_y + Accel_y * eTime;
+	//// calc vel
+	//Vel_x = Vel_x + Accel_x * eTime;
+	//Vel_y = Vel_y + Accel_y * eTime;
 
-	// 0.f으로 set 해주지않으면 계속 빨라진다!
-	Accel_x = 0.f;
-	Accel_y = 0.f;
+	//// 0.f으로 set 해주지않으면 계속 빨라진다!
+	//Accel_x = 0.f;
+	//Accel_y = 0.f;
 
-	// calc friction(마찰력) 계산
-	// 정규화 과정 (벡터 방향을 그대로 두지만 크기가 1인 단위벡터로 바꾸는 과정)
-	float magVel = sqrtf(Vel_x * Vel_x + Vel_y * Vel_y);
-	float velX = Vel_x / magVel;
-	float velY = Vel_y / magVel;
+	//// calc friction(마찰력) 계산
+	//// 정규화 과정 (벡터 방향을 그대로 두지만 크기가 1인 단위벡터로 바꾸는 과정)
+	//float magVel = sqrtf(Vel_x * Vel_x + Vel_y * Vel_y);
+	//float velX = Vel_x / magVel;
+	//float velY = Vel_y / magVel;
 
-	// 마찰력이 작용하는 방향도 구함(힘의 반대방향이므로)
-	float fricX = -velX;
-	float fricY = -velY;
+	//// 마찰력이 작용하는 방향도 구함(힘의 반대방향이므로)
+	//float fricX = -velX;
+	//float fricY = -velY;
 
-	// 마찰력의 크기
-	float friction = COEF_FRICT * MASS * GRAVITY; // 마찰력 = 마찰계수 * m(질량) * g(중력)
+	//// 마찰력의 크기
+	//float friction = COEF_FRICT * MASS * GRAVITY; // 마찰력 = 마찰계수 * m(질량) * g(중력)
 
-	// 마찰력 방향 * 마찰력 크기
-	fricX *= friction;
-	fricY *= friction;
+	//// 마찰력 방향 * 마찰력 크기
+	//fricX *= friction;
+	//fricY *= friction;
 
-	if (magVel < FLT_EPSILON)
-	{
-		Vel_x = 0.f;
-		Vel_y = 0.f;
-	}
-	else
-	{
-		float accX = fricX / MASS;
-		float accY = fricY / MASS;
+	//if (magVel < FLT_EPSILON)
+	//{
+	//	Vel_x = 0.f;
+	//	Vel_y = 0.f;
+	//}
+	//else
+	//{
+	//	float accX = fricX / MASS;
+	//	float accY = fricY / MASS;
 
-		float afterVelX = Vel_x + accX * eTime;
-		float afterVelY = Vel_y + accY * eTime;
+	//	float afterVelX = Vel_x + accX * eTime;
+	//	float afterVelY = Vel_y + accY * eTime;
 
-		if (afterVelX * Vel_x < 0.f)
-			Vel_x = 0.f;
-		else
-			Vel_x = afterVelX;
+	//	if (afterVelX * Vel_x < 0.f)
+	//		Vel_x = 0.f;
+	//	else
+	//		Vel_x = afterVelX;
 
-		if (afterVelY * Vel_y < 0.f)
-			Vel_y = 0.f;
-		else
-			Vel_y = afterVelY;
-	}
+	//	if (afterVelY * Vel_y < 0.f)
+	//		Vel_y = 0.f;
+	//	else
+	//		Vel_y = afterVelY;
+	//}
 
-	//calc velocity
-	Vel_x = Vel_x + Accel_x * eTime;
-	Vel_y = Vel_y + Accel_y * eTime;
+	////calc velocity
+	//Vel_x = Vel_x + Accel_x * eTime;
+	//Vel_y = Vel_y + Accel_y * eTime;
 
-	// calc pos(최종 계산된 위치값을 갖고있음)
-	tempPlayers[playerID].pos.x = tempPlayers[playerID].pos.x + Vel_x * eTime;
-	tempPlayers[playerID].pos.y = tempPlayers[playerID].pos.y + Vel_y * eTime;
+	//// calc pos(최종 계산된 위치값을 갖고있음)
+	//tempPlayers[playerID].pos.x = tempPlayers[playerID].pos.x + Vel_x * eTime;
+	//tempPlayers[playerID].pos.y = tempPlayers[playerID].pos.y + Vel_y * eTime;
 
 	//std::cout << "tempPlayers 좌표 계산 후: "<< tempPlayers[playerID]->pos.x << ", " << tempPlayers[playerID]->pos.y << std::endl;
 
@@ -629,9 +629,9 @@ bool GameEndCheck()
 	// 게임 미종료: false 반환
 
 	// LifeCheck 작성
-	for (int playerID = 0; playerID < MAX_PLAYERS; playerID++) {
-		if (info.players[playerID].life <= 0) {
-			sTcPacket.gameState = GameOverState;
+	for (int i = 0; i < MAX_PLAYERS; i++) {
+		if (info.players[i].life <= 0) {
+			info.players[i].gameState = GameOverState;	// ★ 여기 한 명이라도 목숨 0인게 걸리면 그 플레이어는 게임오버패배 스테이트, 다른 플레이어는 게임오버승리 스테이트로 수정해야겠어요!
 			return true;
 		}
 		else
@@ -642,6 +642,7 @@ bool GameEndCheck()
 	DWORD currTime = GetTickCount();		// current time in millisec
 	info.gameTime = currTime - game_startTime;
 	if (info.gameTime >= GAMEOVER_TIME) {
+
 		return true;
 	}
 
@@ -672,12 +673,16 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 	{
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
+			cTsPacket[i].keyDown[W] = false;
+			cTsPacket[i].keyDown[A] = false;
+			cTsPacket[i].keyDown[S] = false;
+			cTsPacket[i].keyDown[D] = false;
 			info.players[i].gameState = GamePlayState;
 			game_startTime = GetTickCount();
 		}
 	}
 
-	std::cout << "[TCP 서버] 클라이언트 " << playerID << "접속" << std::endl;
+	printf("[TCP 서버] 클라이언트 %d 접속\n", playerID);
 
 	// 전용소켓
 	SOCKET client_sock = (SOCKET)arg;
@@ -712,7 +717,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 
 		// 테스트용 출력
 		//printf("info내 %d번 플레이어 좌표: %f, %f\n", playerID, info.players[playerID].pos.x, info.players[playerID].pos.y);
-		printf("%d 번 플레이어 계산 끝!\n", playerID);
+		//printf("%d 번 플레이어 계산 끝!\n", playerID);
 
 		// 이 곳에 hUpdateInfoEvt 이벤트 신호 해주기
 		//SetEvent(hUpdateInfoEvt[playerID]);
@@ -730,7 +735,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 
 	// 접속자 수 감소
 	info.connectedP--;
-	std::cout << "연결된 플레이어 수 : " << info.connectedP << std::endl;
+	printf("연결된 플레이어 수 : %d \n", info.connectedP);
 
 	if (info.connectedP == 0)
 		leaveID = -1;
@@ -768,10 +773,11 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 		}
 
 		// SendToClient() 작성
-		SendToClient();
+		if(info.connectedP == MAX_PLAYERS)
+			SendToClient();
 
-		if (info.connectedP != 0)
-			printf("데이터 보냈다.\n");
+		//if (info.connectedP != 0)
+			//printf("데이터 보냈다.\n");
 
 		SetEvent(hSendEvt);
 

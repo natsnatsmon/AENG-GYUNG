@@ -114,7 +114,7 @@ void ScnMgr::RenderScene()
 
 				switch (info.items[i].playerID) {
 				case nullPlayer: // »ç°ú
-					m_Renderer->DrawTextureRect(itemPosX, -itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_ItemTex);
+					m_Renderer->DrawTextureRect(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_ItemTex);
 					break;
 
 				case player1:

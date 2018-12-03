@@ -153,13 +153,20 @@ void RecvFromServer(SOCKET s) {
 
 	info.gameState = sTcPacket.gameState;
 	info.gameTime = sTcPacket.time;
-	memcpy(&info.items->pos, sTcPacket.itemPos, sizeof(sTcPacket.itemPos));
-	memcpy(&info.items->isVisible, sTcPacket.isVisible, sizeof(sTcPacket.isVisible));
-	memcpy(&info.items->playerID, sTcPacket.playerID, sizeof(sTcPacket.playerID));
+	for (int i = 0; i < MAX_ITEMS; i++)
+	{
+		info.items[i].pos = sTcPacket.itemPos[i];
+		info.items[i].isVisible = sTcPacket.isVisible[i];
+		info.items[i].playerID = sTcPacket.playerID[i];
+	}
 	info.playersPos[0] = sTcPacket.p1Pos;
 	info.playersPos[1] = sTcPacket.p2Pos;
 
-
+	//for (int i = 0; i < 10; ++i) {
+	//	printf("%d번 인덱스 좌표 x, y, visible: %f, %f", i, info.items[i].pos.x, info.items[i].pos.y);
+	//	bool x = info.items[i].isVisible;
+	//	printf(x ? "true\n" : "false\n");
+	//}
 	//std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
 	//	<< "플레이어 1 좌표: " << sTcPacket.p1Pos.x << ", " << sTcPacket.p1Pos.y << std::endl;
 	//std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl

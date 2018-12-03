@@ -99,40 +99,40 @@ void ScnMgr::RenderScene()
 			}
 		}
 
-		//// 아이템(사과 + 총알) 그리기
-		//for (int itemNum = 0; itemNum < MAX_ITEMS; ++itemNum) {
-		//	if (info.items[itemNum].isVisible == false)
-		//		continue;
-		//	else {
-		//		float itemPosX = info.items[itemNum].pos.x;
-		//		float itemPosY = info.items[itemNum].pos.y;
+		// 아이템(사과 + 총알) 그리기
+		for (int itemNum = 0; itemNum < MAX_ITEMS; ++itemNum) {
+			if (info.items[itemNum].isVisible == false)
+				continue;
+			else {
+				float itemPosX = info.items[itemNum].pos.x;
+				float itemPosY = info.items[itemNum].pos.y;
 
-		//		switch (info.items[itemNum].playerID) {
-		//		case nullPlayer: // 사과
-		//			m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_ItemTex, 1, 1, 1, 1);
-		//			break;
+				switch (info.items[itemNum].playerID) {
+				case nullPlayer: // 사과
+					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_ItemTex, 1, 1, 1, 1);
+					break;
 
-		//		case player1:
-		//			m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player1], 1, 1, 1, 1);
-		//			break;
+				case player1:
+					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player1], 1, 1, 1, 1);
+					break;
 
-		//		case player2:
-		//			m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player2], 1, 1, 1, 1);
-		//			break;
+				case player2:
+					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player2], 1, 1, 1, 1);
+					break;
 
-		//		case player3:
-		//			m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player3], 1, 1, 1, 1);
-		//			break;
+				case player3:
+					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player3], 1, 1, 1, 1);
+					break;
 
-		//		case player4:
-		//			m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player4], 1, 1, 1, 1);
-		//			break;
+				case player4:
+					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player4], 1, 1, 1, 1);
+					break;
 
-		//		default:
-		//			printf("item[itemNum]->playerID 오류!\n");
-		//		}
-		//	}
-		//}
+				default:
+					printf("item[itemNum]->playerID 오류!\n");
+				}
+			}
+		}
 
 		break;
 

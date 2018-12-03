@@ -386,7 +386,7 @@ void UpdatePosition(short playerID) {
 		item_PrevTime = item_currTime;
 		info.items[itemIndex].isVisible = true;
 		itemIndex++;
-		printf("%d번 아이템 켰다\n", itemIndex);
+		// printf("%d번 아이템 켰다\n", itemIndex);
 	}
 
 	//printf("elapsed time: %f", eTime);		// 시간 확인 출력

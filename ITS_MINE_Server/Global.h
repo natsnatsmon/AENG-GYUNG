@@ -22,7 +22,7 @@
 
 #define INIT_POS -100.f
 #define INIT_LIFE 5
-#define GAMEOVER_TIME 30300
+#define GAMEOVER_TIME 101000
 // 103000 = 103초 3초는 준비시간정도로
 
 #define W 0

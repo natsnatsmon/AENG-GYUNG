@@ -389,7 +389,8 @@ void UpdatePosition(short playerID) {
 	// 공식은 현재시간 - 이전시간이 >= 1000ms(1초) 보다 크고, itemIndex가 맥스를 넘지 않을때 인덱스의 값을 true로 만들어주는거에요!
 	if (item_elapsedTime >= 1000 && itemIndex < MAX_ITEMS) {
 		item_PrevTime = item_currTime;
-		tempItems[itemIndex].isVisible = true;
+		if(itemIndex != 2)
+			tempItems[itemIndex].isVisible = true;
 		//info.items[itemIndex].isVisible = true;
 		itemIndex++;
 		// printf("%d번 아이템 켰다\n", itemIndex);
@@ -498,39 +499,45 @@ void UpdatePosition(short playerID) {
 // 종원
 void P_I_CollisionCheck(short playerID)	//Player, Items
 {
-	float x = 0, y = 0;
-	for (int i = 0; i < 99; i++)
+	float player_x = 0.f, player_y = 0.f;
+	float x = 0.f, y = 0.f;
+	float length = 0.f;
+	float Plength = 0.f;
+	for (int i = 0; i < MAX_ITEMS; i++)
 	{
-		if (playerID == player1)
+		length = 100.f;
+		if (tempItems[i].isVisible == true && tempItems[i].playerID == nullPlayer)
 		{
-			x = tempPlayers[player2].pos.x - tempPlayers[player1].pos.x;
-			y = tempPlayers[player2].pos.y - tempPlayers[player1].pos.y;
-		}
-		else if (playerID == player2)
-		{
-			x = tempPlayers[player1].pos.x - tempPlayers[player2].pos.x;
-			y = tempPlayers[player1].pos.y - tempPlayers[player2].pos.y;
-		}
+			x = tempPlayers[playerID].pos.x - tempItems[i].pos.x;
+			y = tempPlayers[playerID].pos.y - tempItems[i].pos.y;
 
-
-		if (!tempItems[i].isVisible)
-			continue;
-		else if (tempItems[i].velocity == 0.f)
-		{
-			if (sqrtf(x * x + y * y) < (PLAYER_SIZE + ITEM_SIZE) / 2.f)
+			length = sqrtf(x * x + y * y);
+			if (i == 2)
 			{
-				printf("플레이어 %d, %d번째 총알 충돌!", playerID, i);
+				//printf("%f %f %f\n", tempItems[i].pos.x, tempItems[i].pos.y, length);
+			}
+			if (length < (PLAYER_SIZE + ITEM_SIZE) / 2.f)
+			{
+				if (playerID == player1)
+				{
+					player_x = tempPlayers[player2].pos.x - tempPlayers[player1].pos.x;
+					player_y = tempPlayers[player2].pos.y - tempPlayers[player1].pos.y;
+				}
+				else if (playerID == player2)
+				{
+					player_x = tempPlayers[player1].pos.x - tempPlayers[player2].pos.x;
+					player_y = tempPlayers[player1].pos.y - tempPlayers[player2].pos.y;
+				}
+				Plength = sqrtf(player_x * player_x + player_y * player_y);
+
 				tempItems[i].playerID = playerID;
-				tempItems[i].velocity = 3.f;
-				tempItems[i].direction = { x / sqrtf(x *x + y * y), y / sqrtf(x * x + y * y) };
+				tempItems[i].velocity = 2.f;
+				tempItems[i].direction = { player_x / Plength, player_y / Plength };
+
 			}
 		}
 	}
-	// playerID를 이용해 계산 후 tempItems[playerID]에 넣을 것!
 
-	// 아이템 먹은 플레이어ID
-
-	// 아이템 표시 여부
 }
 
 void P_B_CollisionCheck(short playerID)// Player, Bullets
@@ -538,7 +545,7 @@ void P_B_CollisionCheck(short playerID)// Player, Bullets
 	float x = 0, y = 0;
 	for (int i = 0; i < 99; i++)
 	{
-		if (tempItems[i].playerID != nullPlayer)
+		if (tempItems[i].playerID != nullPlayer && playerID != tempItems[i].playerID)
 		{
 			x = tempItems[i].pos.x - tempPlayers[playerID].pos.x;
 			y = tempItems[i].pos.y - tempPlayers[playerID].pos.y;
@@ -549,6 +556,7 @@ void P_B_CollisionCheck(short playerID)// Player, Bullets
 				tempItems[i].isVisible = false;
 				tempItems[i].playerID = nullPlayer;
 				tempItems[i].velocity = 0.f;
+				printf("플레이어1: %d 플레이어2 : %d\n", tempPlayers[player1].life, tempPlayers[player2].life);
 			}
 		}
 	}
@@ -711,6 +719,9 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		// 충돌로 인한 아이템 먹은 플레이어ID, 아이템 표시 여부 계산
 		P_I_CollisionCheck(playerID);	// ★ 종원
 		P_W_Collision();
+		B_W_CollisionAndUpdate();
+		P_B_CollisionCheck(playerID);
+		P_P_CollisionCheck();
 
 		// 위에서 계산한 결과와 받은 데이터를 토대로 게임이 종료되었는지 체크
 		if (!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)

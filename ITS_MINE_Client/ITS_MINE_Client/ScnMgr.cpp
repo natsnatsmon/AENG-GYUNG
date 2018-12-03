@@ -20,30 +20,21 @@ ScnMgr::ScnMgr()
 
 
 	// 텍스쳐 파일 로드
-	for (int playerID = 0; playerID < MAX_PLAYERS; ++playerID) {
-		std::string filePath = "./textures/";
-		std::string playerFileName = filePath + "p" + std::to_string(playerID + 1) + "_sprite.png";
-		std::string bulletFileName = filePath + "p" + std::to_string(playerID + 1) + "_bullet.png";
-		std::string resultFileName = filePath + "p" + std::to_string(playerID + 1) + "_resultUI.png";
+	m_PlayerTex[0] = m_Renderer->CreatePngTexture("./textures/p1_sprite.png");
+	m_PlayerTex[1] = m_Renderer->CreatePngTexture("./textures/p2_sprite.png");
+	
+	m_BulletTex[0] = m_Renderer->CreatePngTexture("./textures/p1_bullet.png");
+	m_BulletTex[1] = m_Renderer->CreatePngTexture("./textures/p2_bullet.png");
 
-		char playerTexFilePath[50];
-		char bulletTexFilePath[50];
-		char resultUITexFilePath[50];
-		strcpy_s(playerTexFilePath, playerFileName.c_str());
-		strcpy_s(bulletTexFilePath, bulletFileName.c_str());
-		strcpy_s(resultUITexFilePath, resultFileName.c_str());
-
-		m_PlayerTex[playerID] = m_Renderer->CreatePngTexture(playerTexFilePath);
-		m_BulletTex[playerID] = m_Renderer->CreatePngTexture(bulletTexFilePath);
-		m_ResultUITex[playerID] = m_Renderer->CreatePngTexture(resultUITexFilePath);
-	}
-
+	m_ArrowTex = m_Renderer->CreatePngTexture("./textures/arrow.png");
 	m_ItemTex = m_Renderer->CreatePngTexture("./textures/item.png");
 	m_LifeTex = m_Renderer->CreatePngTexture("./textures/life.png");
 
 	m_StartUITex = m_Renderer->CreatePngTexture("./textures/startUI.png");
-	m_LobbyUITex = m_Renderer->CreatePngTexture("./textures/waitUI_1.png");
+	m_LobbyUITex = m_Renderer->CreatePngTexture("./textures/waitUI.png");
 	m_PlayUITex = m_Renderer->CreatePngTexture("./textures/playUI.png");
+	m_ResultWinUITex = m_Renderer->CreatePngTexture("./textures/winUI.png");
+	m_ResultLoseUITex = m_Renderer->CreatePngTexture("./textures/loseUI.png");
 }
 
 ScnMgr::~ScnMgr()
@@ -52,11 +43,6 @@ ScnMgr::~ScnMgr()
 	{
 		delete m_Renderer;
 		m_Renderer = NULL;
-	}
-	if (m_Objects[HERO_ID])
-	{
-		delete m_Objects[HERO_ID];
-		m_Objects[HERO_ID] = NULL;
 	}
 }
 
@@ -83,33 +69,42 @@ void ScnMgr::RenderScene()
 	case GamePlayState:
 		m_Renderer->DrawTextureRectSeqXY(0, 0, 0, 900, 800, 1, 1, 1, 1, m_PlayUITex, 1, 1, 1, 1);
 
+		// 시간 그리기
+		// Time API 추가해야함
+
+		// 생명 그리기
+		for (int i = 0; i < info.life; ++i) {
+			m_Renderer->DrawTextureRect(390.f, -340.f + (60.f * i), 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_LifeTex);
+		}
+
 		// 플레이어 캐릭터, 상대 캐릭터 그리기
 		int seqX, seqY;
 		seqX = g_Seq % 4;
-		seqY = 1;
+		seqY = (int)(g_Seq / 4);
 
 		g_Seq++;
-		if (g_Seq > 4)
+		if (g_Seq > 16)
 			g_Seq = 0;
 
+
 		for (int i = 0; i < MAX_PLAYERS; ++i) {
-			m_Renderer->DrawTextureRectSeqXY(info.playersPos[i].x, info.playersPos[i].y, 1.f, R_PLAYER * 2, R_PLAYER * 2, 1, 1, 1, 1, m_PlayerTex[i], seqX, seqY, 4, 1);
+			m_Renderer->DrawTextureRectSeqXY(info.playersPos[i].x, info.playersPos[i].y, 1.f, R_PLAYER * 2, R_PLAYER * 2, 1, 1, 1, 1, m_PlayerTex[i], seqX, seqY, 4, 4);
 			if (i == 0) {
-				m_Renderer->DrawTextureRect(info.playersPos[i].x, info.playersPos[i].y + 50.f, 1.f, R_PLAYER * 2, R_PLAYER * 2, 1, 1, 1, 1, m_BulletTex[i]);
+				m_Renderer->DrawTextureRect(info.playersPos[i].x, info.playersPos[i].y + 50.f, 1.f, 20.f, 20.f, 1, 1, 1, 1, m_ArrowTex);
 			}
 		}
 
 		// 아이템(사과 + 총알) 그리기
-		for (int itemNum = 0; itemNum < MAX_ITEMS; ++itemNum) {
-			if (info.items[itemNum].isVisible == false)
+		for (int i = 0; i < MAX_ITEMS; ++i) {
+			if (info.items[i].isVisible == false)
 				continue;
 			else {
-				float itemPosX = info.items[itemNum].pos.x;
-				float itemPosY = info.items[itemNum].pos.y;
+				float itemPosX = info.items[i].pos.x;
+				float itemPosY = info.items[i].pos.y;
 
-				switch (info.items[itemNum].playerID) {
+				switch (info.items[i].playerID) {
 				case nullPlayer: // 사과
-					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_ItemTex, 1, 1, 1, 1);
+					m_Renderer->DrawTextureRect(itemPosX, -itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_ItemTex);
 					break;
 
 				case player1:
@@ -120,14 +115,6 @@ void ScnMgr::RenderScene()
 					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player2], 1, 1, 1, 1);
 					break;
 
-				case player3:
-					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player3], 1, 1, 1, 1);
-					break;
-
-				case player4:
-					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player4], 1, 1, 1, 1);
-					break;
-
 				default:
 					printf("item[itemNum]->playerID 오류!\n");
 				}
@@ -136,8 +123,12 @@ void ScnMgr::RenderScene()
 
 		break;
 
-	case GameOverState:
-		m_Renderer->DrawTextureRectSeqXY(0, 0, 0, 900, 800, 1, 1, 1, 1, m_ResultUITex[0], 1, 1, 1, 1);
+	case WinState:
+		m_Renderer->DrawTextureRectSeqXY(0, 0, 0, 900, 800, 1, 1, 1, 1, m_ResultWinUITex, 1, 1, 1, 1);
+		break;
+
+	case LoseState:
+		m_Renderer->DrawTextureRectSeqXY(0, 0, 0, 900, 800, 1, 1, 1, 1, m_ResultLoseUITex, 1, 1, 1, 1);
 		break;
 
 	default:

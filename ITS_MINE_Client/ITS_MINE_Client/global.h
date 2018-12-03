@@ -13,9 +13,7 @@
 #define SIZE_CToSPACKET 6
 #define SIZE_SToCPACKET 1122
 
-#define HERO_ID	0 
-
-#define MAX_OBJECTS	300
+#define MAX_OBJECTS	100
 
 #define SHOOT_NONE	-1
 #define SHOOT_LEFT	1
@@ -45,12 +43,12 @@
 
 //★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
 enum gameState {
-	MainState, LobbyState, GamePlayState, GameOverState
+	MainState, LobbyState, GamePlayState, WinState, LoseState
 };
 
-//★ 플레이어 수는 임시로 4까지 해놓음. 끝날때까지도 2명만 쓰면 define으로 바꿈
+//★ 플레이어
 enum player {
-	player1, player2, player3, player4, nullPlayer = 99
+	player1, player2, nullPlayer = 99
 };
 
 

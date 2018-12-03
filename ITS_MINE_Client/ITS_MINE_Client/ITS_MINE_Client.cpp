@@ -96,6 +96,7 @@ void Init() {
 	// 게임 정보 구조체 초기화
 	info.gameState = MainState;
 	info.gameTime = 0;
+	info.life = INIT_LIFE;
 	for (int i = 0; i < MAX_PLAYERS; ++i)
 		info.playersPos[i] = { INIT_POS, INIT_POS };
 	for (int i = 0; i < MAX_ITEMS; ++i) {

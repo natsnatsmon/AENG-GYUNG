@@ -35,9 +35,12 @@ DWORD send_PrevTime = 0;
 
 // 서버를 떠난 클라이언트ID
 short leaveID = -1;
+// 서버에 남아있는 클라이언트 ID
+short leftID = -1;
+
 int itemIndex = 0;
 
-CRITICAL_SECTION cs;
+//CRITICAL_SECTION cs;
 
 void err_quit(const char *msg);
 void err_display(const char *msg);
@@ -204,22 +207,21 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 // 초기화 함수
 void Init() {
-	game_startTime = 0;
-	game_PrevTime = 0;
-	server_PrevTime = 0;
-	item_PrevTime = 0;
-	send_PrevTime = 0;
+	//game_startTime = 0;
+	//game_PrevTime = 0;
+	//server_PrevTime = 0;
+	//item_PrevTime = 0;
+	//send_PrevTime = 0;
 
-	itemIndex = 0;
+	//itemIndex = 0;
 
-	// 게임 정보 구조체 초기화
-	info.connectedP = 0;
-	info.gameTime = 0;
+	//// 게임 정보 구조체 초기화
+	//info.gameTime = 0;
 
 	// 게임 정보 구조체 내의 플레이어 구조체 정보 및 임시플레이어 구조체 정보 초기화
 	for (int i = 0; i < MAX_PLAYERS; ++i) {
-		info.players[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE};
 
+		info.players[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE};
 		tempPlayers[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
 	}
 
@@ -246,7 +248,7 @@ void Init() {
 	sTcPacket.p1Pos = { INIT_POS, INIT_POS };
 	sTcPacket.p2Pos = { INIT_POS, INIT_POS };
 
-	for (int i = 0; i < MAX_ITEMS; ++i) {
+	for (int i = 0; i < MAX_ITEMS; i++) {
 		sTcPacket.itemPos[i] = info.items[i].pos;
 		sTcPacket.playerID[i] = nullPlayer;
 		sTcPacket.isVisible[i] = false;
@@ -326,22 +328,25 @@ void SendToClient()
 	int retVal;
 	char buf[SIZE_SToCPACKET];
 
-	// 테스트용 출력
-	//std::cout << "패킷내 플레이어 1 좌표: " << sTcPacket->p1Pos.x << ", " << sTcPacket->p1Pos.y << std::endl;
 
 	// 통신 버퍼에 패킷 메모리 복사
 	ZeroMemory(buf, SIZE_SToCPACKET);
 	memcpy(buf, &sTcPacket, SIZE_SToCPACKET);
 
-	for (int i = 0; i < info.connectedP; i++)
+	for (int i = 0; i < MAX_PLAYERS; i++)
 	{
-		retVal = send(clientSocks[i], buf, SIZE_SToCPACKET, 0);
-		if (retVal == SOCKET_ERROR)
+		if (clientSocks[i] != 0)		// 게임 중간에 나간 플레이어가 아니면
 		{
-			printf("%d번 클라 ", i);
-			err_display("send()");
-			continue;
-			//exit(1);
+			retVal = send(clientSocks[i], buf, SIZE_SToCPACKET, 0);
+			if (retVal == SOCKET_ERROR)
+			{
+				closesocket(clientSocks[i]);
+				clientSocks[i] = 0;
+				printf("%d번 클라 ", i);
+				err_display("send()");
+				continue;
+				//exit(1);
+			}
 		}
 	}
 }
@@ -358,15 +363,15 @@ void UpdatePosition(short playerID) {
 
 	// 내 위치 계산 및 대입
 	// ★ elapsed time 계산
-	if (game_PrevTime == 0)	// g_PrevTime은 0이고 currTime은 시작부터 시간을 재고 있기때문에 처음 elapsedTime을 구할 때 차이가 너무 많아 나버릴 수 있다.
-	{
-		game_PrevTime = GetTickCount();
-		return;
-	}
-	DWORD currTime = GetTickCount();		// current time in millisec
-	DWORD elapsedTime = currTime - game_PrevTime;
-	game_PrevTime = currTime;
-	float eTime = (float)elapsedTime / 1000.f;		// ms to s
+	//if (game_PrevTime == 0)	// g_PrevTime은 0이고 currTime은 시작부터 시간을 재고 있기때문에 처음 elapsedTime을 구할 때 차이가 너무 많아 나버릴 수 있다.
+	//{
+	//	game_PrevTime = GetTickCount();
+	//	return;
+	//}
+	//DWORD currTime = GetTickCount();		// current time in millisec
+	//DWORD elapsedTime = currTime - game_PrevTime;
+	//game_PrevTime = currTime;
+	//float eTime = (float)elapsedTime / 1000.f;		// ms to s
 	
 
 	// 아이템 1초마다 스폰시켜주는 부분
@@ -384,7 +389,8 @@ void UpdatePosition(short playerID) {
 	// 공식은 현재시간 - 이전시간이 >= 1000ms(1초) 보다 크고, itemIndex가 맥스를 넘지 않을때 인덱스의 값을 true로 만들어주는거에요!
 	if (item_elapsedTime >= 1000 && itemIndex < MAX_ITEMS) {
 		item_PrevTime = item_currTime;
-		info.items[itemIndex].isVisible = true;
+		tempItems[itemIndex].isVisible = true;
+		//info.items[itemIndex].isVisible = true;
 		itemIndex++;
 		// printf("%d번 아이템 켰다\n", itemIndex);
 	}
@@ -628,6 +634,13 @@ bool GameEndCheck()
 	// 게임 종료: true 반환
 	// 게임 미종료: false 반환
 
+	// 플레이어가 도중에 나갔는지 체크
+	if (leftID != -1)	// 남아있는 플레이어 ID가 기본값(-1)이 아니면(= 누군가 게임 도중에 나갔다면)
+	{
+		info.players[leftID].gameState = GameOverState;
+		return true;
+	}
+
 	// LifeCheck 작성
 	for (int i = 0; i < MAX_PLAYERS; i++) {
 		if (info.players[i].life <= 0) {
@@ -673,10 +686,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 	{
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
-			cTsPacket[i].keyDown[W] = false;
-			cTsPacket[i].keyDown[A] = false;
-			cTsPacket[i].keyDown[S] = false;
-			cTsPacket[i].keyDown[D] = false;
+			//Init();
 			info.players[i].gameState = GamePlayState;
 			game_startTime = GetTickCount();
 		}
@@ -685,14 +695,15 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 	printf("[TCP 서버] 클라이언트 %d 접속\n", playerID);
 
 	// 전용소켓
-	SOCKET client_sock = (SOCKET)arg;
+	clientSocks[playerID] = (SOCKET)arg;
+
 	// 전용소켓을 갖는 전역변수 배열에 대입
-	clientSocks[playerID] = client_sock;
+	//clientSocks[playerID] = client_sock;
 
 	while (1) {
 
 		// 데이터 받아오기
-		retval = RecvFromClient(client_sock, playerID);
+		retval = RecvFromClient(clientSocks[playerID], playerID);
 		if (retval == SOCKET_ERROR)
 			break;
 
@@ -707,28 +718,25 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 
 		// ★ 계산한 값 info에 넣기 전, hSendEvt 이벤트 신호 대기
 		WaitForSingleObject(hSendEvt, 20);
-		//WaitForMultipleObjects(MAX_PLAYERS, hSendEvt, TRUE, 30);
 
 		// 위에서 계산한 모든 갱신된 값을 info에 대입
 		// 캐릭터 위치
 		info.players[playerID].pos.x = tempPlayers[playerID].pos.x;
 		info.players[playerID].pos.y = tempPlayers[playerID].pos.y;
 
-
-		// 테스트용 출력
-		//printf("info내 %d번 플레이어 좌표: %f, %f\n", playerID, info.players[playerID].pos.x, info.players[playerID].pos.y);
-		//printf("%d 번 플레이어 계산 끝!\n", playerID);
+		for(int i = 0; i < MAX_ITEMS; i++)
+			info.items[i] = tempItems[i];
 
 		// 이 곳에 hUpdateInfoEvt 이벤트 신호 해주기
-		//SetEvent(hUpdateInfoEvt[playerID]);
 		SetEvent(hUpdateInfoEvt);
-
-
 	}
 
-
-	// closesocket()		★ 현재 RecvFromClient()에서 recv() 오류나면 클로즈하게 되어있음 수정 필요
-	closesocket(client_sock);
+	// closesocket()
+	if (clientSocks[playerID] != 0)
+	{
+		closesocket(clientSocks[playerID]);
+		clientSocks[playerID] = 0;
+	}
 
 	//★ 소멸 시 출력(테스트용)
 	printf("[TCP 서버] 클라이언트 %d 종료\n", playerID);
@@ -737,10 +745,20 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 	info.connectedP--;
 	printf("연결된 플레이어 수 : %d \n", info.connectedP);
 
-	if (info.connectedP == 0)
-		leaveID = -1;
-	else
+	if (info.connectedP == 1)
+	{
 		leaveID = playerID;
+		for (int i = 0; i < MAX_PLAYERS; i++)
+		{
+			if (i != leaveID)
+				leftID = i;
+		}
+	}
+	else
+	{
+		leaveID = -1;
+		leftID = -1;
+	}
 
 	return 0;
 }
@@ -752,6 +770,8 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 	// ★ 생성 시 출력(테스트용)
 	printf("UpdatePackAndSend 생성 (이전 CalculateThread)\n");
 
+	int retval;
+
 	while (1)
 	{
 		// sTcPacket에 갱신된 정보 넣기 전, hUpdateInfoEvt 이벤트 신호 대기
@@ -760,8 +780,6 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 
 		// 패킷에 갱신된 info 값들을 대입
 		sTcPacket.time = info.gameTime;		// ★ 게임 시간 계산은..?
-
-		sTcPacket.gameState = info.players[0].gameState;		// ★ 0번 클라이언트의 상태를 전송한다.(수정 필요할 듯)
 
 		sTcPacket.p1Pos = info.players[0].pos;
 		sTcPacket.p2Pos = info.players[1].pos;
@@ -772,9 +790,16 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 			sTcPacket.isVisible[i] = info.items[i].isVisible;
 		}
 
+		if (leftID != -1)
+			sTcPacket.gameState = info.players[leftID].gameState;
+		else
+			sTcPacket.gameState = info.players[0].gameState;
+
 		// SendToClient() 작성
-		if(info.connectedP == MAX_PLAYERS)
+		if (info.players[0].gameState == GamePlayState || info.players[1].gameState == GamePlayState)
+		{
 			SendToClient();
+		}
 
 		//if (info.connectedP != 0)
 			//printf("데이터 보냈다.\n");

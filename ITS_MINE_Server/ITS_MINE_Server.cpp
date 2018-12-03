@@ -565,11 +565,18 @@ void P_B_CollisionCheck(short playerID)// Player, Bullets
 void P_P_CollisionCheck()
 {
 	float x = 0, y = 0;
+	float length = 0.f;
 	x = tempPlayers[player1].pos.x - tempPlayers[player2].pos.x;
 	y = tempPlayers[player1].pos.y - tempPlayers[player2].pos.y;
-	if (sqrtf(x * x + y * y) < PLAYER_SIZE)
+	length = sqrtf(x * x + y * y);
+	if (length < PLAYER_SIZE)
 	{
-		printf("Player - Player Collision!\n");
+		x *= PLAYER_SIZE / 1800.f;
+		y *= PLAYER_SIZE / 1800.f;
+		tempPlayers[player1].pos.x += x;
+		tempPlayers[player1].pos.y += y;
+		tempPlayers[player2].pos.x -= x;
+		tempPlayers[player2].pos.y -= y;
 	}
 }
 

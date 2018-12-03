@@ -30,6 +30,15 @@ ScnMgr::ScnMgr()
 	m_ItemTex = m_Renderer->CreatePngTexture("./textures/item.png");
 	m_LifeTex = m_Renderer->CreatePngTexture("./textures/life.png");
 
+	for (int i = 0; i < 10; ++i) {
+		std::string filePath = "./textures/";
+		std::string fileName = filePath + std::to_string(i) + ".png";
+		char texFile[50];
+		strcpy_s(texFile, fileName.c_str());
+
+		m_TimeTex[i] = m_Renderer->CreatePngTexture(texFile);
+	}
+
 	m_StartUITex = m_Renderer->CreatePngTexture("./textures/startUI.png");
 	m_LobbyUITex = m_Renderer->CreatePngTexture("./textures/waitUI.png");
 	m_PlayUITex = m_Renderer->CreatePngTexture("./textures/playUI.png");
@@ -71,6 +80,7 @@ void ScnMgr::RenderScene()
 
 		// 시간 그리기
 		// Time API 추가해야함
+		TimeRenderer();
 
 		// 생명 그리기
 		for (int i = 0; i < info.life; ++i) {
@@ -137,42 +147,26 @@ void ScnMgr::RenderScene()
 	}
 }
 
-// ★ 필요 없다고 생각해서 주석처리했습니당
+void ScnMgr::TimeRenderer() {
+	// 현재 시간을 1000으로 나눠서.. 몇초인지 세고..
+	unsigned int time = (unsigned int)(info.gameTime) / 1000;
+	unsigned int leaveTime = GAMEOVER_TIME - time;
 
-//void ScnMgr::AddObject(float x, float y, float z,
-//	float sx, float sy,
-//	float vx, float vy)
-//{
-//	int id = FindEmptyObjectSlot();
-//	if (id < 0)
-//	{
-//		return;
-//	}
-//	m_Objects[id] = new Object;
-//	m_Objects[id]->SetPos(x, y, z);
-//	m_Objects[id]->SetSize(sx, sy);
-//	m_Objects[id]->SetColor(1, 1, 1, 1);
-//	m_Objects[id]->SetKind(KIND_BULLET);
-//
-//}
-//
-//void ScnMgr::DeleteObject(int id)
-//{
-//	if (m_Objects[id] != NULL)
-//	{
-//		delete m_Objects[id];
-//		m_Objects[id] = NULL;
-//	}
-//}
-//
-//int ScnMgr::FindEmptyObjectSlot()
-//{
-//	for (int i = 0; i < MAX_OBJECTS; i++)
-//	{
-//		if (m_Objects[i] == NULL)
-//			return i;
-//	}
-//	std::cout << "No more empty slot!\n";
-//	return -1;
-//}
-//
+	// 그걸 다시 10으로도 나눠서..
+	unsigned int sec = leaveTime % 10;
+	unsigned int tenSec = 0;
+
+	if (leaveTime >= 10 && leaveTime < GAMEOVER_TIME) {
+		tenSec = leaveTime / 10;
+	}
+
+	if (leaveTime == 100) {
+		m_Renderer->DrawTextureRect(363.f, 320.f, 1.f, 30.f, 50.f, 1, 1, 1, 1, m_TimeTex[1]);
+		m_Renderer->DrawTextureRect(385.f, 320.f, 1.f, 30.f, 50.f, 1, 1, 1, 1, m_TimeTex[0]);
+		m_Renderer->DrawTextureRect(412.f, 320.f, 1.f, 30.f, 50.f, 1, 1, 1, 1, m_TimeTex[0]);
+	}
+	else {
+		m_Renderer->DrawTextureRect(375.f, 320.f, 1.f, 30.f, 50.f, 1, 1, 1, 1, m_TimeTex[tenSec]);
+		m_Renderer->DrawTextureRect(405.f, 320.f, 1.f, 30.f, 50.f, 1, 1, 1, 1, m_TimeTex[sec]);
+	}
+}

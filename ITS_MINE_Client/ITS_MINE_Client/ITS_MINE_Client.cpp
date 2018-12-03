@@ -163,6 +163,8 @@ void RecvFromServer(SOCKET s) {
 	info.playersPos[0] = sTcPacket.p1Pos;
 	info.playersPos[1] = sTcPacket.p2Pos;
 
+//	printf("%d\n", info.gameTime);
+
 	//for (int i = 0; i < 10; ++i) {
 	//	printf("%d¹ø ÀÎµ¦½º ÁÂÇ¥ x, y, visible: %f, %f", i, info.items[i].pos.x, info.items[i].pos.y);
 	//	bool x = info.items[i].isVisible;

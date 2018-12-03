@@ -10,6 +10,7 @@ public:
 	~ScnMgr();
 
 	void RenderScene();
+	void TimeRenderer();
 
 private:
 	Renderer *m_Renderer;
@@ -20,6 +21,8 @@ private:
 	GLuint m_ArrowTex = 0;
 	GLuint m_ItemTex = 0;
 	GLuint m_LifeTex = 0;
+	GLuint m_TimeTex[10] = { 0, };
+
 	GLuint m_StartUITex = 0;
 	GLuint m_LobbyUITex = 0;
 	GLuint m_PlayUITex = 0;

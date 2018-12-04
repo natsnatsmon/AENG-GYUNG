@@ -21,7 +21,7 @@ StoCPacket sTcPacket;
 
 // 각 클라에 대해 갱신된 값을 갖고있을 변수
 SPlayer tempPlayers[MAX_PLAYERS];
-SItemObj tempItems[MAX_PLAYERS];
+SItemObj tempItems[MAX_ITEMS];
 
 // 각 클라이언트 전용 소켓 배열
 SOCKET clientSocks[2];
@@ -32,6 +32,8 @@ DWORD game_PrevTime = 0;
 DWORD server_PrevTime = 0; // server의 시간이란 의미로 s_를......... .... PrevTime 겹치길래.....ㅜ
 DWORD item_PrevTime = 0;
 DWORD send_PrevTime = 0;
+
+DWORD tempTime = 0;
 
 // 서버를 떠난 클라이언트ID
 short leaveID = -1;
@@ -215,8 +217,8 @@ void Init() {
 
 	//itemIndex = 0;
 
-	//// 게임 정보 구조체 초기화
-	//info.gameTime = 0;
+	// 게임 정보 구조체 초기화
+	info.gameTime = 0;
 
 	// 게임 정보 구조체 내의 플레이어 구조체 정보 및 임시플레이어 구조체 정보 초기화
 	for (int i = 0; i < MAX_PLAYERS; ++i) {
@@ -232,7 +234,7 @@ void Init() {
 
 		info.items[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
 
-		tempItems[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
+		tempItems[i] = info.items[i];
 	}
 
 	// C -> S Packet 구조체 초기화
@@ -389,15 +391,9 @@ void UpdatePosition(short playerID) {
 	// 공식은 현재시간 - 이전시간이 >= 1000ms(1초) 보다 크고, itemIndex가 맥스를 넘지 않을때 인덱스의 값을 true로 만들어주는거에요!
 	if (item_elapsedTime >= 1000 && itemIndex < MAX_ITEMS) {
 		item_PrevTime = item_currTime;
-		if(itemIndex != 2)
-			tempItems[itemIndex].isVisible = true;
-		//info.items[itemIndex].isVisible = true;
+		tempItems[itemIndex].isVisible = true;
 		itemIndex++;
-		// printf("%d번 아이템 켰다\n", itemIndex);
 	}
-
-	//printf("elapsed time: %f", eTime);		// 시간 확인 출력
-
 
 	// 힘 적용
 	float forceX = 0.f;
@@ -497,12 +493,13 @@ void UpdatePosition(short playerID) {
 }
 
 // 종원
-void P_I_CollisionCheck(short playerID)	//Player, Items
+void P_I_CollisionCheck(short playerID)   //Player, Items
 {
 	float player_x = 0.f, player_y = 0.f;
 	float x = 0.f, y = 0.f;
 	float length = 0.f;
 	float Plength = 0.f;
+
 	for (int i = 0; i < MAX_ITEMS; i++)
 	{
 		length = 100.f;
@@ -512,10 +509,6 @@ void P_I_CollisionCheck(short playerID)	//Player, Items
 			y = tempPlayers[playerID].pos.y - tempItems[i].pos.y;
 
 			length = sqrtf(x * x + y * y);
-			if (i == 2)
-			{
-				//printf("%f %f %f\n", tempItems[i].pos.x, tempItems[i].pos.y, length);
-			}
 			if (length < (PLAYER_SIZE + ITEM_SIZE) / 2.f)
 			{
 				if (playerID == player1)
@@ -533,11 +526,9 @@ void P_I_CollisionCheck(short playerID)	//Player, Items
 				tempItems[i].playerID = playerID;
 				tempItems[i].velocity = 2.f;
 				tempItems[i].direction = { player_x / Plength, player_y / Plength };
-
 			}
 		}
 	}
-
 }
 
 void P_B_CollisionCheck(short playerID)// Player, Bullets
@@ -652,14 +643,14 @@ bool GameEndCheck()
 	// 플레이어가 도중에 나갔는지 체크
 	if (leftID != -1)	// 남아있는 플레이어 ID가 기본값(-1)이 아니면(= 누군가 게임 도중에 나갔다면)
 	{
-		info.players[leftID].gameState = GameOverState;
+		tempPlayers[leftID].gameState = GameOverState;
 		return true;
 	}
 
 	// LifeCheck 작성
 	for (int i = 0; i < MAX_PLAYERS; i++) {
 		if (info.players[i].life <= 0) {
-			info.players[i].gameState = GameOverState;	// ★ 여기 한 명이라도 목숨 0인게 걸리면 그 플레이어는 게임오버패배 스테이트, 다른 플레이어는 게임오버승리 스테이트로 수정해야겠어요!
+			tempPlayers[i].gameState = GameOverState;	// ★ 여기 한 명이라도 목숨 0인게 걸리면 그 플레이어는 게임오버패배 스테이트, 다른 플레이어는 게임오버승리 스테이트로 수정해야겠어요!
 			return true;
 		}
 		else
@@ -668,9 +659,13 @@ bool GameEndCheck()
 
 	// TimeCheck 작성
 	DWORD currTime = GetTickCount();		// current time in millisec
-	info.gameTime = currTime - game_startTime;
-	if (info.gameTime >= GAMEOVER_TIME) {
-
+	tempTime = currTime - game_startTime;
+	if (tempTime >= GAMEOVER_TIME)
+	{
+		for (int i = 0; i < MAX_PLAYERS; i++)
+		{
+			tempPlayers[i].gameState = GameOverState;
+		}
 		return true;
 	}
 
@@ -702,7 +697,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
 			//Init();
-			info.players[i].gameState = GamePlayState;
+			tempPlayers[i].gameState = GamePlayState;
 			game_startTime = GetTickCount();
 		}
 	}
@@ -722,17 +717,21 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		if (retval == SOCKET_ERROR)
 			break;
 
-		// 받은 데이터를 이용해 계산
-		// 충돌로 인한 아이템 먹은 플레이어ID, 아이템 표시 여부 계산
-		P_I_CollisionCheck(playerID);	// ★ 종원
-		P_W_Collision();
-		B_W_CollisionAndUpdate();
-		P_B_CollisionCheck(playerID);
-		P_P_CollisionCheck();
+		if (tempPlayers[playerID].gameState == GamePlayState)
+		{
+			// 받은 데이터를 이용해 계산
+			// 충돌로 인한 아이템 먹은 플레이어ID, 아이템 표시 여부 계산
+			P_I_CollisionCheck(playerID);	// ★ 종원
+			P_W_Collision();
+			B_W_CollisionAndUpdate();
+			P_B_CollisionCheck(playerID);
+			P_P_CollisionCheck();
 
-		// 위에서 계산한 결과와 받은 데이터를 토대로 게임이 종료되었는지 체크
-		if (!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)
-			UpdatePosition(playerID);
+			// 위에서 계산한 결과와 받은 데이터를 토대로 게임이 종료되었는지 체크
+			if (!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)
+				UpdatePosition(playerID);
+		}
+
 
 		// ★ 계산한 값 info에 넣기 전, hSendEvt 이벤트 신호 대기
 		WaitForSingleObject(hSendEvt, 20);
@@ -742,7 +741,13 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		info.players[playerID].pos.x = tempPlayers[playerID].pos.x;
 		info.players[playerID].pos.y = tempPlayers[playerID].pos.y;
 
-		for(int i = 0; i < MAX_ITEMS; i++)
+		info.players[playerID].gameState = tempPlayers[playerID].gameState;
+
+		info.players[playerID].life = info.players[playerID].life;
+
+		info.gameTime = tempTime;
+
+		for (int i = 0; i < MAX_ITEMS; i++)
 			info.items[i] = tempItems[i];
 
 		// 이 곳에 hUpdateInfoEvt 이벤트 신호 해주기
@@ -814,7 +819,7 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 			sTcPacket.gameState = info.players[0].gameState;
 
 		// SendToClient() 작성
-		if (info.players[0].gameState == GamePlayState || info.players[1].gameState == GamePlayState)
+		if (tempPlayers[0].gameState != LobbyState || tempPlayers[1].gameState != LobbyState)
 		{
 			SendToClient();
 		}

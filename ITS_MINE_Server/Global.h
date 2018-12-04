@@ -8,7 +8,7 @@
 #define SERVERPORT 8888
 
 #define SIZE_CToSPACKET 6
-#define SIZE_SToCPACKET 1122
+#define SIZE_SToCPACKET 1124
 
 #define MAX_PLAYERS 2
 #define MAX_ITEMS 100
@@ -39,7 +39,7 @@
 
 //★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
 enum gameState {
-	LobbyState = 1, GamePlayState, GameOverState
+	LobbyState = 1, GamePlayState, WinState, LoseState
 };
 
 //★ 플레이어 수는 임시로 4까지 해놓음. 끝날때까지도 2명만 쓰면 define으로 바꿈
@@ -95,6 +95,8 @@ struct StoCPacket {
 
 	Vec p1Pos;
 	Vec p2Pos;
+
+	short life;
 
 	Vec itemPos[MAX_ITEMS];
 	short playerID[MAX_ITEMS];

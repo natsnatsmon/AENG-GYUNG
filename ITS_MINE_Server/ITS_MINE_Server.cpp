@@ -250,6 +250,8 @@ void Init() {
 	sTcPacket.p1Pos = { INIT_POS, INIT_POS };
 	sTcPacket.p2Pos = { INIT_POS, INIT_POS };
 
+	sTcPacket.life = INIT_LIFE;
+
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		sTcPacket.itemPos[i] = info.items[i].pos;
 		sTcPacket.playerID[i] = nullPlayer;
@@ -333,12 +335,16 @@ void SendToClient()
 
 	// 통신 버퍼에 패킷 메모리 복사
 	ZeroMemory(buf, SIZE_SToCPACKET);
-	memcpy(buf, &sTcPacket, SIZE_SToCPACKET);
 
 	for (int i = 0; i < MAX_PLAYERS; i++)
 	{
 		if (clientSocks[i] != 0)		// 게임 중간에 나간 플레이어가 아니면
 		{
+			sTcPacket.gameState = info.players[i].gameState;
+			sTcPacket.life = info.players[i].life;
+
+			memcpy(buf, &sTcPacket, SIZE_SToCPACKET);
+
 			retVal = send(clientSocks[i], buf, SIZE_SToCPACKET, 0);
 			if (retVal == SOCKET_ERROR)
 			{
@@ -524,7 +530,7 @@ void P_I_CollisionCheck(short playerID)   //Player, Items
 				Plength = sqrtf(player_x * player_x + player_y * player_y);
 
 				tempItems[i].playerID = playerID;
-				tempItems[i].velocity = 2.f;
+				tempItems[i].velocity = 4.f;
 				tempItems[i].direction = { player_x / Plength, player_y / Plength };
 			}
 		}
@@ -547,7 +553,7 @@ void P_B_CollisionCheck(short playerID)// Player, Bullets
 				tempItems[i].isVisible = false;
 				tempItems[i].playerID = nullPlayer;
 				tempItems[i].velocity = 0.f;
-				printf("플레이어1: %d 플레이어2 : %d\n", tempPlayers[player1].life, tempPlayers[player2].life);
+				//printf("플레이어1: %d 플레이어2 : %d\n", tempPlayers[player1].life, tempPlayers[player2].life);
 			}
 		}
 	}
@@ -643,14 +649,20 @@ bool GameEndCheck()
 	// 플레이어가 도중에 나갔는지 체크
 	if (leftID != -1)	// 남아있는 플레이어 ID가 기본값(-1)이 아니면(= 누군가 게임 도중에 나갔다면)
 	{
-		tempPlayers[leftID].gameState = GameOverState;
+		tempPlayers[leftID].gameState = WinState;
 		return true;
 	}
 
 	// LifeCheck 작성
 	for (int i = 0; i < MAX_PLAYERS; i++) {
-		if (info.players[i].life <= 0) {
-			tempPlayers[i].gameState = GameOverState;	// ★ 여기 한 명이라도 목숨 0인게 걸리면 그 플레이어는 게임오버패배 스테이트, 다른 플레이어는 게임오버승리 스테이트로 수정해야겠어요!
+		if (tempPlayers[i].life == 0) {
+			tempPlayers[i].gameState = LoseState;	// ★ 여기 한 명이라도 목숨 0인게 걸리면 그 플레이어는 게임오버패배 스테이트, 다른 플레이어는 게임오버승리 스테이트로 수정해야겠어요!
+			
+			for (int j = 0; j < MAX_PLAYERS; j++)
+			{
+				if (j != i)
+					tempPlayers[j].gameState = WinState;
+			}
 			return true;
 		}
 		else
@@ -664,7 +676,7 @@ bool GameEndCheck()
 	{
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
-			tempPlayers[i].gameState = GameOverState;
+			tempPlayers[i].gameState = LoseState;
 		}
 		return true;
 	}
@@ -743,7 +755,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 
 		info.players[playerID].gameState = tempPlayers[playerID].gameState;
 
-		info.players[playerID].life = info.players[playerID].life;
+		info.players[playerID].life = tempPlayers[playerID].life;
 
 		info.gameTime = tempTime;
 

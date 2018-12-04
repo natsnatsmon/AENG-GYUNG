@@ -11,7 +11,7 @@
 #define SERVERPORT 8888
 
 #define SIZE_CToSPACKET 6
-#define SIZE_SToCPACKET 1122
+#define SIZE_SToCPACKET 1124
 
 #define MAX_OBJECTS	100
 
@@ -73,6 +73,8 @@ struct StoCPacket {
 
 	Vec p1Pos;
 	Vec p2Pos;
+
+	short life;
 
 	Vec itemPos[MAX_ITEMS]; // ★ 논의 필요
 	short playerID[MAX_ITEMS];

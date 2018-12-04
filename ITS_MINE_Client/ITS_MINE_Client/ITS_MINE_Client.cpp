@@ -163,20 +163,7 @@ void RecvFromServer(SOCKET s) {
 	info.playersPos[0] = sTcPacket.p1Pos;
 	info.playersPos[1] = sTcPacket.p2Pos;
 
-//	printf("%d\n", info.gameTime);
-
-	//for (int i = 0; i < 10; ++i) {
-	//	printf("%d번 인덱스 좌표 x, y, visible: %f, %f", i, info.items[i].pos.x, info.items[i].pos.y);
-	//	bool x = info.items[i].isVisible;
-	//	printf(x ? "true\n" : "false\n");
-	//}
-	//std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
-	//	<< "플레이어 1 좌표: " << sTcPacket.p1Pos.x << ", " << sTcPacket.p1Pos.y << std::endl;
-	//std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
-	//	<< "플레이어 2 좌표: " << sTcPacket.p2Pos.x << ", " << sTcPacket.p2Pos.y << std::endl;
-	//std::cout << "[ 서버로부터 받은 데이터 확인 ]" << std::endl
-	//	<< "상태: " << sTcPacket.gameState << std::endl;
-	
+	info.life = sTcPacket.life;
 }
 
 void SendToServer(SOCKET s) {
@@ -280,8 +267,6 @@ void KeyUpInput(unsigned char key, int x, int y)
 	}
 }
 
-// 임시변수
-bool q = true;
 DWORD WINAPI ProccessClient(LPVOID arg) {
 	printf("클라이언트 통신 스레드 생성\n");
 

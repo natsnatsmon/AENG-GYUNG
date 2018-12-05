@@ -211,7 +211,7 @@ void Init() {
 	// info 구조체 초기화(info내 플레이어 구조체 및 임시플레이어 구조체 정보)
 	for (int i = 0; i < MAX_PLAYERS; ++i) {
 
-		info.players[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE};
+		info.players[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
 		tempPlayers[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
 	}
 
@@ -222,13 +222,13 @@ void Init() {
 
 		info.items[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
 
-		tempItems[i] = info.items[i];
+		tempItems[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
 	}
 
 	// C -> S Packet 구조체 초기화
 	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
-		cTsPacket[i] = { {false, false, false, false}, INIT_LIFE };
+		cTsPacket[i] = { {false, false, false, false} };
 	}
 
 	// S -> C Packet 구조체 초기화
@@ -349,7 +349,7 @@ void UpdatePosition(short playerID) {
 	//	cTsPacket[playerID].keyDown[S],
 	//	cTsPacket[playerID].keyDown[D]
 	//};
-	
+
 
 	// 아이템 1초마다 스폰시켜주는 부분
 	if (item_PrevTime == 0)	// g_PrevTime은 0이고 currTime은 시작부터 시간을 재고 있기때문에 처음 elapsedTime을 구할 때 차이가 너무 많아 나버릴 수 있다.
@@ -556,7 +556,7 @@ bool GameEndCheck()
 	for (int i = 0; i < MAX_PLAYERS; i++) {
 		if (tempPlayers[i].life == 0) {
 			tempPlayers[i].gameState = LoseState;	// ★ 여기 한 명이라도 목숨 0인게 걸리면 그 플레이어는 게임오버패배 스테이트, 다른 플레이어는 게임오버승리 스테이트로 수정해야겠어요!
-			
+
 			for (int j = 0; j < MAX_PLAYERS; j++)
 			{
 				if (j != i)
@@ -609,7 +609,6 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		{
 			tempPlayers[i].gameState = GamePlayState;
 		}
-		restartP = 0;
 		game_startTime = GetTickCount();
 	}
 
@@ -643,43 +642,59 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 			if (!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)
 				UpdatePosition(playerID);
 			break;
-			
+
 		case WinState:
 		case LoseState:
 			// 재시작 선택
-			if (cTsPacket[playerID].keyDown[W] && cTsPacket[playerID].keyDown[A] && 
+			if (cTsPacket[playerID].keyDown[W] && cTsPacket[playerID].keyDown[A] &&
 				cTsPacket[playerID].keyDown[S] && cTsPacket[playerID].keyDown[D])
 			{
 				restartP++;
 
+				//info.players[playerID] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
 				tempPlayers[playerID] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
-				cTsPacket[playerID] = { {false, false, false, false}, INIT_LIFE };
+				cTsPacket[playerID] = { {false, false, false, false} };
+
+
+				// info 구조체 초기화(info내 아이템 구조체 및 임시아이템 구조체 정보)
+				for (int i = 0; i < MAX_ITEMS; ++i) {
+					float randX = (float)(rand() % PLAY_WIDTH) - PLAY_X;
+					float randY = (float)(rand() % PLAY_WIDTH) - PLAY_Y;
+
+					//info.items[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
+
+					tempItems[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
+				}
+
+				sTcPacket.time = 0;
+
+				sTcPacket.p1Pos = { INIT_POS, INIT_POS };
+				sTcPacket.p2Pos = { INIT_POS, INIT_POS };
+
+				sTcPacket.life = INIT_LIFE;
+
+				for (int i = 0; i < MAX_ITEMS; i++) {
+					sTcPacket.itemPos[i] = info.items[i].pos;
+					sTcPacket.playerID[i] = nullPlayer;
+					sTcPacket.isVisible[i] = false;
+				}
+
+				// 시간 갱신
+				tempTime = 0;
 
 				if (restartP == MAX_PLAYERS)
 				{
-					// 아이템 갱신
-					for (int i = 0; i < MAX_ITEMS; ++i) {
-						float randX = (float)(rand() % PLAY_WIDTH) - PLAY_X;
-						float randY = (float)(rand() % PLAY_WIDTH) - PLAY_Y;
-
-						tempItems[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
-					}
-
-					// 시간 갱신
-					tempTime = 0;
-
+					game_PrevTime = 0;
+					item_PrevTime = 0;
 					for (int i = 0; i < MAX_PLAYERS; i++)
 					{
 						tempPlayers[i].gameState = GamePlayState;
 					}
-
 					restartP = 0;
 
-					/*game_PrevTime = 0;
-					item_PrevTime = 0;*/
 					game_startTime = GetTickCount();
 				}
-				
+
 				break;
 			}
 			// 게임 종료 선택
@@ -689,7 +704,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 				closesocket(clientSocks[playerID]);
 				clientSocks[playerID] = 0;
 				break;
-			}		
+			}
 		}
 
 

@@ -10,7 +10,7 @@
 
 #define SERVERPORT 8888
 
-#define SIZE_CToSPACKET 6
+#define SIZE_CToSPACKET 4
 #define SIZE_SToCPACKET 1124
 
 #define MAX_OBJECTS	100
@@ -61,7 +61,6 @@ struct Vec {
 #pragma pack(1)
 struct CtoSPacket {
 	bool keyDown[4];
-	short life;
 };
 #pragma pack()
 

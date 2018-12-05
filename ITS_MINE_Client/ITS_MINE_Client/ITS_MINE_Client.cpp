@@ -106,7 +106,7 @@ void Init() {
 	}
 	   
 	// C -> S Packet 구조체 초기화
-	cTsPacket = { {false, false, false, false}, INIT_LIFE };
+	cTsPacket = { {false, false, false, false} };
 
 	sTcPacket.gameState = LobbyState;
 	sTcPacket.time = 0;
@@ -293,13 +293,13 @@ void KeyUpInput(unsigned char key, int x, int y)
 	}
 	else if (key == VK_RETURN)
 	{
-		if (info.gameState != GamePlayState)
-		{
+		//if (info.gameState != GamePlayState)
+		//{
 			cTsPacket.keyDown[W] = false;
 			cTsPacket.keyDown[A] = false;
 			cTsPacket.keyDown[S] = false;
 			cTsPacket.keyDown[D] = false;
-		}
+		//}
 	}
 }
 

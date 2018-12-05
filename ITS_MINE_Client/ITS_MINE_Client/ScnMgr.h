@@ -28,5 +28,6 @@ private:
 	GLuint m_PlayUITex = 0;
 	GLuint m_ResultWinUITex = 0;
 	GLuint m_ResultLoseUITex = 0;
+	GLuint m_ResultDrawUITex = 0;
 };
 

@@ -22,7 +22,7 @@
 
 #define INIT_POS -100.f
 #define INIT_LIFE 5
-#define GAMEOVER_TIME 100000	// 100000 = 100초
+#define GAMEOVER_TIME 10000	// 100000 = 100초
 
 #define W 0
 #define A 1
@@ -39,7 +39,7 @@
 
 //★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
 enum gameState {
-	LobbyState = 1, GamePlayState, WinState, LoseState
+	LobbyState = 1, GamePlayState, WinState, LoseState, drawState
 };
 
 //★ 플레이어 수는 임시로 4까지 해놓음. 끝날때까지도 2명만 쓰면 define으로 바꿈

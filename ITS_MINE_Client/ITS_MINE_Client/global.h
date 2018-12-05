@@ -44,7 +44,7 @@
 
 //★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
 enum gameState {
-	MainState, LobbyState, GamePlayState, WinState, LoseState
+	MainState, LobbyState, GamePlayState, WinState, LoseState, drawState
 };
 
 //★ 플레이어

@@ -44,6 +44,7 @@ ScnMgr::ScnMgr()
 	m_PlayUITex = m_Renderer->CreatePngTexture("./textures/playUI.png");
 	m_ResultWinUITex = m_Renderer->CreatePngTexture("./textures/winUI.png");
 	m_ResultLoseUITex = m_Renderer->CreatePngTexture("./textures/loseUI.png");
+	m_ResultDrawUITex = m_Renderer->CreatePngTexture("./textures/drawUI.png");
 }
 
 ScnMgr::~ScnMgr()
@@ -139,6 +140,10 @@ void ScnMgr::RenderScene()
 
 	case LoseState:
 		m_Renderer->DrawTextureRectSeqXY(0, 0, 0, 900, 800, 1, 1, 1, 1, m_ResultLoseUITex, 1, 1, 1, 1);
+		break;
+
+	case drawState:
+		m_Renderer->DrawTextureRectSeqXY(0, 0, 0, 900, 800, 1, 1, 1, 1, m_ResultDrawUITex, 1, 1, 1, 1);
 		break;
 
 	default:

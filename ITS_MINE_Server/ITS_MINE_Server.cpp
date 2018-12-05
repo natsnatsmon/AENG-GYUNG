@@ -565,10 +565,22 @@ bool GameEndCheck()
 	tempTime = currTime - game_startTime;
 	if (tempTime >= GAMEOVER_TIME)
 	{
-		for (int i = 0; i < MAX_PLAYERS; i++)
-		{
-			tempPlayers[i].gameState = LoseState;
+		// 0번 플레이어 승리
+		if (tempPlayers[0].life > tempPlayers[1].life) {
+			tempPlayers[0].gameState = WinState;
+			tempPlayers[1].gameState = LoseState;
 		}
+		// 1번 플레이어 승리
+		else if (tempPlayers[1].life > tempPlayers[0].life) {
+			tempPlayers[0].gameState = LoseState;
+			tempPlayers[1].gameState = WinState;
+		}
+		// 무승부
+		else if (tempPlayers[0].life == tempPlayers[1].life) {
+			tempPlayers[0].gameState = drawState;
+			tempPlayers[1].gameState = drawState;
+		}
+
 		return true;
 	}
 

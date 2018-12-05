@@ -29,9 +29,9 @@ SOCKET clientSocks[2];
 // 시간 저장 변수
 DWORD game_startTime = 0;
 DWORD game_PrevTime = 0;
-DWORD server_PrevTime = 0; // server의 시간이란 의미로 s_를......... .... PrevTime 겹치길래.....ㅜ
 DWORD item_PrevTime = 0;
-DWORD send_PrevTime = 0;
+//DWORD server_PrevTime = 0; // server의 시간이란 의미로 s_를......... .... PrevTime 겹치길래.....ㅜ
+//DWORD send_PrevTime = 0;
 DWORD tempTime = 0;
 
 // 서버를 떠난 클라이언트ID
@@ -40,6 +40,8 @@ short leaveID = -1;
 short leftID = -1;
 
 int itemIndex = 0;
+
+short restartP = 0;
 
 //CRITICAL_SECTION cs;
 
@@ -293,6 +295,12 @@ int RecvFromClient(SOCKET client_sock, short PlayerID)
 
 	// 해당하는 클라이언트 패킷버퍼에 받은 데이터(buf)를 복사
 	memcpy(&cTsPacket[playerID], buf, SIZE_CToSPACKET);
+
+	//printf("[%d 클라 패킷 좌표] W: %d, A: %d, S: %d, D: %d \n", playerID,
+	//	cTsPacket[playerID].keyDown[W],
+	//	cTsPacket[playerID].keyDown[A],
+	//	cTsPacket[playerID].keyDown[S],
+	//	cTsPacket[playerID].keyDown[D]);
 
 	return 0;
 }
@@ -600,8 +608,9 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
 			tempPlayers[i].gameState = GamePlayState;
-			game_startTime = GetTickCount();
 		}
+		restartP = 0;
+		game_startTime = GetTickCount();
 	}
 
 	printf("[TCP 서버] 클라이언트 %d 접속\n", playerID);
@@ -609,8 +618,8 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 	// 전용소켓
 	clientSocks[playerID] = (SOCKET)arg;
 
+	// 클라에게 몇번 플레이어인지 데이터 전송
 	send(clientSocks[playerID], (char*)&playerID, sizeof(short), 0);
-
 
 	while (1) {
 
@@ -634,25 +643,48 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 			if (!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)
 				UpdatePosition(playerID);
 			break;
-
+			
 		case WinState:
 		case LoseState:
-			if (cTsPacket[playerID].keyDown[W] && 
-				cTsPacket[playerID].keyDown[A] && 
-				cTsPacket[playerID].keyDown[S] && 
-				cTsPacket[playerID].keyDown[D])
+			// 재시작 선택
+			if (cTsPacket[playerID].keyDown[W] && cTsPacket[playerID].keyDown[A] && 
+				cTsPacket[playerID].keyDown[S] && cTsPacket[playerID].keyDown[D])
 			{
-				/******;
-				info.players[playerID] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
-				tempPlayers[playerID] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };*/
+				restartP++;
+
+				tempPlayers[playerID] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
+				cTsPacket[playerID] = { {false, false, false, false}, INIT_LIFE };
+
+				if (restartP == MAX_PLAYERS)
+				{
+					// 아이템 갱신
+					for (int i = 0; i < MAX_ITEMS; ++i) {
+						float randX = (float)(rand() % PLAY_WIDTH) - PLAY_X;
+						float randY = (float)(rand() % PLAY_WIDTH) - PLAY_Y;
+
+						tempItems[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
+					}
+
+					// 시간 갱신
+					tempTime = 0;
+
+					for (int i = 0; i < MAX_PLAYERS; i++)
+					{
+						tempPlayers[i].gameState = GamePlayState;
+					}
+
+					restartP = 0;
+
+					/*game_PrevTime = 0;
+					item_PrevTime = 0;*/
+					game_startTime = GetTickCount();
+				}
 				
-				tempPlayers[playerID].gameState = LobbyState;
 				break;
 			}
-			else if (cTsPacket[playerID].keyDown[W] &&
-				cTsPacket[playerID].keyDown[S] &&
-				cTsPacket[playerID].keyDown[D] &&
-				!cTsPacket[playerID].keyDown[A])
+			// 게임 종료 선택
+			else if (cTsPacket[playerID].keyDown[W] && cTsPacket[playerID].keyDown[S] &&
+				cTsPacket[playerID].keyDown[D] && !cTsPacket[playerID].keyDown[A])
 			{
 				closesocket(clientSocks[playerID]);
 				clientSocks[playerID] = 0;

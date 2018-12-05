@@ -293,24 +293,12 @@ void KeyUpInput(unsigned char key, int x, int y)
 	}
 	else if (key == VK_RETURN)
 	{
-		if (info.gameState == WinState || info.gameState == LoseState)
+		if (info.gameState != GamePlayState)
 		{
 			cTsPacket.keyDown[W] = false;
 			cTsPacket.keyDown[A] = false;
 			cTsPacket.keyDown[S] = false;
 			cTsPacket.keyDown[D] = false;
-		}
-	}
-	else if (key == VK_ESCAPE)
-	{
-		if (info.gameState == WinState || info.gameState == LoseState)
-		{
-			cTsPacket.keyDown[W] = false;
-			cTsPacket.keyDown[A] = false;
-			cTsPacket.keyDown[S] = false;
-			cTsPacket.keyDown[D] = false;
-
-			
 		}
 	}
 }

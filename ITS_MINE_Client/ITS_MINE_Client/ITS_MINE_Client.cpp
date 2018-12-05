@@ -246,10 +246,31 @@ void KeyDownInput(unsigned char key, int x, int y)
 	}
 	else if (key == 'd' || key == 'D')
 	{
-		if (info.gameState == WinState || info.gameState == LoseState)
-			exit(0);
 		cTsPacket.keyDown[D] = true;
 	}
+	else if (key == VK_RETURN)
+	{
+		if (info.gameState == WinState || info.gameState == LoseState)
+		{
+			cTsPacket.keyDown[W] = true;
+			cTsPacket.keyDown[A] = true;
+			cTsPacket.keyDown[S] = true;
+			cTsPacket.keyDown[D] = true;
+		}
+	}
+	else if (key == VK_ESCAPE)
+	{
+		if (info.gameState == WinState || info.gameState == LoseState)
+		{
+			cTsPacket.keyDown[W] = true;
+			cTsPacket.keyDown[A] = false;
+			cTsPacket.keyDown[S] = true;
+			cTsPacket.keyDown[D] = true;
+
+			exit(0);
+		}
+	}
+	
 }
 
 void KeyUpInput(unsigned char key, int x, int y)
@@ -269,6 +290,28 @@ void KeyUpInput(unsigned char key, int x, int y)
 	else if (key == 'd' || key == 'D')
 	{
 		cTsPacket.keyDown[D] = false;
+	}
+	else if (key == VK_RETURN)
+	{
+		if (info.gameState == WinState || info.gameState == LoseState)
+		{
+			cTsPacket.keyDown[W] = false;
+			cTsPacket.keyDown[A] = false;
+			cTsPacket.keyDown[S] = false;
+			cTsPacket.keyDown[D] = false;
+		}
+	}
+	else if (key == VK_ESCAPE)
+	{
+		if (info.gameState == WinState || info.gameState == LoseState)
+		{
+			cTsPacket.keyDown[W] = false;
+			cTsPacket.keyDown[A] = false;
+			cTsPacket.keyDown[S] = false;
+			cTsPacket.keyDown[D] = false;
+
+			
+		}
 	}
 }
 

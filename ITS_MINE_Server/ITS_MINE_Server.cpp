@@ -637,12 +637,22 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 
 		case WinState:
 		case LoseState:
-			if (cTsPacket[playerID].keyDown[A])
+			if (cTsPacket[playerID].keyDown[W] && 
+				cTsPacket[playerID].keyDown[A] && 
+				cTsPacket[playerID].keyDown[S] && 
+				cTsPacket[playerID].keyDown[D])
 			{
+				/******;
+				info.players[playerID] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
+				tempPlayers[playerID] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };*/
+				
 				tempPlayers[playerID].gameState = LobbyState;
 				break;
 			}
-			else if (cTsPacket[playerID].keyDown[D])
+			else if (cTsPacket[playerID].keyDown[W] &&
+				cTsPacket[playerID].keyDown[S] &&
+				cTsPacket[playerID].keyDown[D] &&
+				!cTsPacket[playerID].keyDown[A])
 			{
 				closesocket(clientSocks[playerID]);
 				clientSocks[playerID] = 0;

@@ -37,7 +37,7 @@ SOCKET sock;
 SOCKADDR_IN serveraddr;
 char* serverIP;
 
-bool firstConnect;
+HANDLE h_connectEvt;
 
 ScnMgr *g_ScnMgr = NULL;
 DWORD g_PrevTime = 0;
@@ -76,11 +76,11 @@ void KeyUpInput(unsigned char key, int x, int y);
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	// 구조체 초기화
 	Init();
+	h_connectEvt = CreateEvent(NULL, FALSE, FALSE, NULL);
 
-	if (firstConnect) {
-		// 대화상자 생성
-		DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, (DLGPROC)DlgProc);
-	}
+	// 대화상자 생성
+	DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, (DLGPROC)DlgProc);
+
 
 	// Initialize GL things
 	glutInit(&__argc, __argv);
@@ -150,9 +150,19 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
 			// 입력받은 32비트 IP 주소를 문자열로 변환
 			serverIP = inet_ntoa(*(IN_ADDR*)&dwAddress);
-			printf("%s", serverIP);
 
-			firstConnect = false;
+			// 윈속 초기화
+			if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+				return 1;
+
+			sock = socket(AF_INET, SOCK_STREAM, 0);
+			if (sock == INVALID_SOCKET) err_quit("socket()");
+
+			ZeroMemory(&serveraddr, sizeof(serveraddr));
+			serveraddr.sin_family = AF_INET;
+			serveraddr.sin_addr.s_addr = inet_addr(serverIP);
+			serveraddr.sin_port = htons(SERVERPORT);
+
 			EndDialog(hDlg, IDOK);
 			return TRUE;
 
@@ -166,26 +176,12 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 }
 
 DWORD WINAPI ProcessClient(LPVOID arg) {
+	WaitForSingleObject(h_connectEvt, INFINITE);
 	printf("클라이언트 통신 스레드 생성\n");
-
-	// 윈속 초기화
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-		return 1;
-
-	// socket()
-	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock == INVALID_SOCKET) err_quit("socket()");
-
-	// connect()
-	ZeroMemory(&serveraddr, sizeof(serveraddr));
-	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = inet_addr(serverIP);
-	//serveraddr.sin_addr.s_addr = inet_addr(strIP);
-	serveraddr.sin_port = htons(SERVERPORT);
-
+	   
 	while (1)
 	{
-		if (info.gameState == GamePlayState || info.gameState == LobbyState) {
+		if (info.gameState != MainState) {
 			// 데이터 송신
 			SendToServer(sock);
 
@@ -244,9 +240,8 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 // 구조체 초기화 함수
 void Init() {
+	printf("Init()\n");
 	serverIP = 0;
-
-	firstConnect = true;
 
 	// 게임 정보 구조체 초기화
 	info.gameState = MainState;
@@ -261,7 +256,7 @@ void Init() {
 	}
 
 	// C -> S Packet 구조체 초기화
-	cTsPacket = { {false, false, false, false}, INIT_LIFE };
+	cTsPacket = { {false, false, false, false}};
 
 	sTcPacket.gameState = LobbyState;
 	sTcPacket.time = 0;
@@ -381,6 +376,7 @@ void KeyDownInput(unsigned char key, int x, int y)
 			SendToServer(sock);
 
 			info.gameState = LobbyState;
+			SetEvent(h_connectEvt);
 		}
 	}
 

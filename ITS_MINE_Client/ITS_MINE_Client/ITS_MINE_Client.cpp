@@ -256,7 +256,7 @@ void Init() {
 	}
 
 	// C -> S Packet 구조체 초기화
-	cTsPacket = { {false, false, false, false}};
+	cTsPacket = { {false, false, false, false} };
 
 	sTcPacket.gameState = LobbyState;
 	sTcPacket.time = 0;
@@ -366,12 +366,15 @@ void KeyDownInput(unsigned char key, int x, int y)
 {
 	if (info.gameState == MainState) {
 		int retval = 0;
+
 		retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
+
 		if (retval == SOCKET_ERROR)
 			err_quit("connect()");
 		else {
 			std::cout << "connect() 완료!\n";
-
+			recv(sock, (char*)&info.playerID, sizeof(short), 0);
+			printf("%d번 클라임", info.playerID);
 			// 만약 connect()가 성공했다면~(테스트)
 			SendToServer(sock);
 
@@ -396,6 +399,29 @@ void KeyDownInput(unsigned char key, int x, int y)
 	{
 		cTsPacket.keyDown[D] = true;
 	}
+	else if (key == VK_RETURN)
+	{
+		if (info.gameState == WinState || info.gameState == LoseState || info.gameState == drawState)
+		{
+			cTsPacket.keyDown[W] = true;
+			cTsPacket.keyDown[A] = true;
+			cTsPacket.keyDown[S] = true;
+			cTsPacket.keyDown[D] = true;
+		}
+	}
+	else if (key == VK_ESCAPE)
+	{
+		if (info.gameState == WinState || info.gameState == LoseState || info.gameState == drawState)
+		{
+			cTsPacket.keyDown[W] = true;
+			cTsPacket.keyDown[A] = false;
+			cTsPacket.keyDown[S] = true;
+			cTsPacket.keyDown[D] = true;
+
+			exit(0);
+		}
+	}
+	
 }
 
 void KeyUpInput(unsigned char key, int x, int y)
@@ -416,5 +442,17 @@ void KeyUpInput(unsigned char key, int x, int y)
 	{
 		cTsPacket.keyDown[D] = false;
 	}
+	else if (key == VK_RETURN)
+	{
+		if (cTsPacket.keyDown[W] == true &&
+			cTsPacket.keyDown[A] == true &&
+			cTsPacket.keyDown[S] == true &&
+			cTsPacket.keyDown[D] == true)
+		{
+			cTsPacket.keyDown[W] = false;
+			cTsPacket.keyDown[A] = false;
+			cTsPacket.keyDown[S] = false;
+			cTsPacket.keyDown[D] = false;
+		}
+	}
 }
-

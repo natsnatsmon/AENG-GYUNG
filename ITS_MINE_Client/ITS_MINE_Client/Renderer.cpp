@@ -37,7 +37,7 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	m_TextureRectSeqShader = CompileShaders("./Shaders/TextureRectSeq.vs", "./Shaders/TextureRectSeq.fs");
 
 	//Load shadow texture
-	m_TexShadow = CreatePngTexture("./shadow.png");
+	m_TexShadow = CreatePngTexture("./textures/shadow.png");
 
 	//Create VBOs
 	CreateVertexBufferObjects();

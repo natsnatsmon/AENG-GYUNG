@@ -649,6 +649,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 
 		case WinState:
 		case LoseState:
+		case drawState:
 			// 재시작 선택
 			if (cTsPacket[playerID].keyDown[W] && cTsPacket[playerID].keyDown[A] &&
 				cTsPacket[playerID].keyDown[S] && cTsPacket[playerID].keyDown[D])

@@ -250,7 +250,7 @@ void KeyDownInput(unsigned char key, int x, int y)
 	}
 	else if (key == VK_RETURN)
 	{
-		if (info.gameState == WinState || info.gameState == LoseState)
+		if (info.gameState == WinState || info.gameState == LoseState || info.gameState == drawState)
 		{
 			cTsPacket.keyDown[W] = true;
 			cTsPacket.keyDown[A] = true;
@@ -260,7 +260,7 @@ void KeyDownInput(unsigned char key, int x, int y)
 	}
 	else if (key == VK_ESCAPE)
 	{
-		if (info.gameState == WinState || info.gameState == LoseState)
+		if (info.gameState == WinState || info.gameState == LoseState || info.gameState == drawState)
 		{
 			cTsPacket.keyDown[W] = true;
 			cTsPacket.keyDown[A] = false;

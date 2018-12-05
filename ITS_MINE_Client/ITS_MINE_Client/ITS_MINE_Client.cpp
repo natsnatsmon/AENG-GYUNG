@@ -7,6 +7,7 @@ it under the terms of the What The Hell License. Do it plz.
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY.
 */
+
 //#pragma comment(lib,"winmm.lib")
 #define _CRT_SECURE_NO_WARNINGS
 #pragma comment(lib, "ws2_32")
@@ -14,14 +15,16 @@ but WITHOUT ANY WARRANTY.
 #include "stdafx.h"
 #include <iostream>
 #include <Windows.h>
+#include <stdlib.h>
+#include "resource.h"
+#include <commctrl.h>
+
 #include "Dependencies\glew.h"
 #include "Dependencies\freeglut.h"
 #include <math.h>
 #include <chrono>
 #include "ScnMgr.h"
 
-
-#define FORCE 1000.f
 using namespace std;
 
 // 윈속 초기화에 쓰일 변수
@@ -32,6 +35,9 @@ SOCKET sock;
 
 // connect()
 SOCKADDR_IN serveraddr;
+char* serverIP;
+
+HANDLE h_connectEvt;
 
 ScnMgr *g_ScnMgr = NULL;
 DWORD g_PrevTime = 0;
@@ -45,6 +51,147 @@ CInfo info;
 // 패킷 구조체 선언
 CtoSPacket cTsPacket;
 StoCPacket sTcPacket;
+
+HWND hIpControl, hSendButton;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
+BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
+DWORD WINAPI ProcessClient(LPVOID arg);
+
+void err_quit(const char *msg);
+void err_display(const char *msg);
+int recvn(SOCKET s, char *buf, int len, int flags);
+void Init();
+
+void RecvFromServer(SOCKET s);
+void SendToServer(SOCKET s);
+
+void RenderScene(void);
+void Idle(void);
+void MouseInput(int button, int state, int x, int y);
+void KeyDownInput(unsigned char key, int x, int y);
+void KeyUpInput(unsigned char key, int x, int y);
+
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+	// 구조체 초기화
+	Init();
+	h_connectEvt = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+	// 대화상자 생성
+	DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, (DLGPROC)DlgProc);
+
+
+	// Initialize GL things
+	glutInit(&__argc, __argv);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
+	glutInitWindowPosition(100, 100);
+	glutInitWindowSize(900, 800);
+	glutCreateWindow("Game Software Engineering KPU");
+
+	glewInit();
+	if (glewIsSupported("GL_VERSION_3_0"))
+	{
+		std::cout << " GLEW Version is 3.0\n ";
+	}
+	else
+	{
+		std::cout << "GLEW 3.0 not supported\n ";
+	}
+
+	glutDisplayFunc(RenderScene);
+	glutIdleFunc(Idle);
+	glutKeyboardFunc(KeyDownInput);
+	glutKeyboardUpFunc(KeyUpInput);
+	glutMouseFunc(MouseInput);
+
+	glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
+
+	// 소켓 통신 스레드 생성
+	CreateThread(NULL, 0, ProcessClient, NULL, 0, NULL);
+
+	g_ScnMgr = new ScnMgr();
+
+	glutMainLoop();		//메인 루프 함수
+
+	delete g_ScnMgr;
+
+	// closesocket()
+	closesocket(sock);
+
+	WSACleanup();
+	return 0;
+}
+
+// 대화상자 프로시저
+BOOL CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	DWORD address = 0;
+	DWORD dwAddress = 0;
+
+	switch (uMsg) {
+	case WM_INITDIALOG:
+		hIpControl = GetDlgItem(hDlg, IDC_IPADDRESS1);
+		hSendButton = GetDlgItem(hDlg, IDOK);
+		//SendMessage(hEdit1, EM_SETLIMITTEXT, BUFSIZE, 0);
+		return TRUE;
+
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		case IDOK:
+			//ip 주소 컨트롤에서 값을 가져오는 방법을 보자!
+
+			// hDlg다이어로그 핸들에서 IDC_IPADDRESS ip주소 컨트롤의 핸들을 첫번째 파라미터에 넣고, 
+			// 값을 가져 오겠다는 매크로 IPM_GETADDRESS를 넣는다.
+			// 마지막 파라미터는 그 읽어온 주소값을 DWORD에 넣는데 그 주소를 넘긴다.
+			SendMessage(GetDlgItem(hDlg, IDC_IPADDRESS1), IPM_GETADDRESS, 0, (LPARAM)&address);
+
+			// 네트워크 순서로 정렬된 값을 호스트 순서로 변환
+			dwAddress = ntohl(address);
+
+			// 입력받은 32비트 IP 주소를 문자열로 변환
+			serverIP = inet_ntoa(*(IN_ADDR*)&dwAddress);
+
+			// 윈속 초기화
+			if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+				return 1;
+
+			sock = socket(AF_INET, SOCK_STREAM, 0);
+			if (sock == INVALID_SOCKET) err_quit("socket()");
+
+			ZeroMemory(&serveraddr, sizeof(serveraddr));
+			serveraddr.sin_family = AF_INET;
+			serveraddr.sin_addr.s_addr = inet_addr(serverIP);
+			serveraddr.sin_port = htons(SERVERPORT);
+
+			EndDialog(hDlg, IDOK);
+			return TRUE;
+
+		case IDCANCEL:
+			EndDialog(hDlg, IDCANCEL);
+			return TRUE;
+		}
+		return FALSE;
+	}
+	return FALSE;
+}
+
+DWORD WINAPI ProcessClient(LPVOID arg) {
+	WaitForSingleObject(h_connectEvt, INFINITE);
+	printf("클라이언트 통신 스레드 생성\n");
+	   
+	while (1)
+	{
+		if (info.gameState != MainState) {
+			// 데이터 송신
+			SendToServer(sock);
+
+			// 데이터 수신
+			RecvFromServer(sock);
+		}
+	}
+
+	return 0;
+}
 
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char *msg)
@@ -93,6 +240,9 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 // 구조체 초기화 함수
 void Init() {
+	printf("Init()\n");
+	serverIP = 0;
+
 	// 게임 정보 구조체 초기화
 	info.gameState = MainState;
 	info.gameTime = 0;
@@ -104,7 +254,7 @@ void Init() {
 		info.items[i].isVisible = false;
 		info.items[i].playerID = nullPlayer;
 	}
-	   
+
 	// C -> S Packet 구조체 초기화
 	cTsPacket = { {false, false, false, false} };
 
@@ -131,7 +281,6 @@ void Init() {
 		printf("sTcPacket의 크기 : %zd\t SIZE_SToCPACKET의 크기 : %d\n", sizeof(sTcPacket), SIZE_SToCPACKET);
 	}
 }
-
 
 void RecvFromServer(SOCKET s) {
 
@@ -202,6 +351,7 @@ void RenderScene(void)
 	glutSwapBuffers();
 }
 
+
 void Idle(void)
 {
 	RenderScene();
@@ -229,6 +379,7 @@ void KeyDownInput(unsigned char key, int x, int y)
 			SendToServer(sock);
 
 			info.gameState = LobbyState;
+			SetEvent(h_connectEvt);
 		}
 	}
 
@@ -304,83 +455,4 @@ void KeyUpInput(unsigned char key, int x, int y)
 			cTsPacket.keyDown[D] = false;
 		}
 	}
-}
-
-DWORD WINAPI ProccessClient(LPVOID arg) {
-	printf("클라이언트 통신 스레드 생성\n");
-
-	// 윈속 초기화
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-		return 1;
-
-	// socket()
-	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock == INVALID_SOCKET) err_quit("socket()");
-
-	// connect()
-	ZeroMemory(&serveraddr, sizeof(serveraddr));
-	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
-	serveraddr.sin_port = htons(SERVERPORT);
-
-	while (1)
-	{
-		if (info.gameState != MainState) {
-			// 데이터 송신
-			SendToServer(sock);
-
-			// 데이터 수신
-			RecvFromServer(sock);
-		}
-	}
-
-	return 0;
-}
-
-int main(int argc, char **argv)
-{
-	// 구조체 초기화
-	Init();
-
-	// Initialize GL things
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowPosition(100, 100);
-	glutInitWindowSize(900, 800);
-	glutCreateWindow("IT'S MINE");
-
-	glewInit();
-	if (glewIsSupported("GL_VERSION_3_0"))
-	{
-		std::cout << " GLEW Version is 3.0\n ";
-	}
-	else
-	{
-		std::cout << "GLEW 3.0 not supported\n ";
-	}
-
-	glutDisplayFunc(RenderScene);
-	glutIdleFunc(Idle);
-	glutKeyboardFunc(KeyDownInput);
-	glutKeyboardUpFunc(KeyUpInput);
-	glutMouseFunc(MouseInput);
-
-	glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
-
-	// 소켓 통신 스레드 생성
-	CreateThread(NULL, 0, ProccessClient, NULL, 0, NULL);
-
-	g_ScnMgr = new ScnMgr();
-
-	glutMainLoop();		//메인 루프 함수
-	
-	delete g_ScnMgr;
-
-	// closesocket()
-	closesocket(sock);
-
-	// 윈속 종료
-	WSACleanup();
-
-	return 0;
 }

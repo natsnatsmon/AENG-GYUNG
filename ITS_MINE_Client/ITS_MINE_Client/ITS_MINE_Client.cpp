@@ -221,7 +221,8 @@ void KeyDownInput(unsigned char key, int x, int y)
 			err_quit("connect()");
 		else {
 			std::cout << "connect() 완료!\n";
-
+			recv(sock, (char*)&info.playerID, sizeof(int), 0);
+			printf("%d번 클라임", info.playerID);
 			// 만약 connect()가 성공했다면~(테스트)
 			SendToServer(sock);
 

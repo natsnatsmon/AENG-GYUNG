@@ -92,6 +92,8 @@ struct CItemObj {
 
 // 게임 정보 구조체
 typedef struct CInfo {
+	short playerID;	//playerID
+	
 	short gameState;  // 게임 상태를 나타내는 변수 
 	DWORD gameTime;  // 게임 시간 
 

@@ -99,7 +99,7 @@ void ScnMgr::RenderScene()
 
 		for (int i = 0; i < MAX_PLAYERS; ++i) {
 			m_Renderer->DrawTextureRectSeqXY(info.playersPos[i].x, info.playersPos[i].y, 1.f, R_PLAYER * 2, R_PLAYER * 2, 1, 1, 1, 1, m_PlayerTex[i], seqX, seqY, 8, 4);
-			if (i == 0) {
+			if (i == info.playerID) {
 				m_Renderer->DrawTextureRect(info.playersPos[i].x, info.playersPos[i].y + 50.f, 1.f, 20.f, 20.f, 1, 1, 1, 1, m_ArrowTex);
 			}
 		}

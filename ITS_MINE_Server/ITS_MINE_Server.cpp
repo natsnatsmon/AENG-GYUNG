@@ -719,6 +719,8 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 	// 전용소켓
 	clientSocks[playerID] = (SOCKET)arg;
 
+	send(clientSocks[playerID], (char*)&playerID, sizeof(int), 0);
+
 	// 전용소켓을 갖는 전역변수 배열에 대입
 	//clientSocks[playerID] = client_sock;
 

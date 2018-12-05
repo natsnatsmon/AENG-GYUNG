@@ -22,7 +22,7 @@
 
 #define INIT_POS -100.f
 #define INIT_LIFE 5
-#define GAMEOVER_TIME 10000	// 100000 = 100√ 
+#define GAMEOVER_TIME 100000	// 100000 = 100√ 
 
 #define W 0
 #define A 1

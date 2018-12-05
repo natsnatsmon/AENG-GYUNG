@@ -335,14 +335,6 @@ void UpdatePosition(short playerID) {
 
 	short pID = playerID;
 
-	//BOOL tempKeyDown[4] = {
-	//	cTsPacket[playerID].keyDown[W],
-	//	cTsPacket[playerID].keyDown[A],
-	//	cTsPacket[playerID].keyDown[S],
-	//	cTsPacket[playerID].keyDown[D]
-	//};
-	
-
 	// 아이템 1초마다 스폰시켜주는 부분
 	if (item_PrevTime == 0)	// g_PrevTime은 0이고 currTime은 시작부터 시간을 재고 있기때문에 처음 elapsedTime을 구할 때 차이가 너무 많아 나버릴 수 있다.
 	{

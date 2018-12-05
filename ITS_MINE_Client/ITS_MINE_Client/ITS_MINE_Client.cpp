@@ -293,13 +293,16 @@ void KeyUpInput(unsigned char key, int x, int y)
 	}
 	else if (key == VK_RETURN)
 	{
-		//if (info.gameState != GamePlayState)
-		//{
+		if (cTsPacket.keyDown[W] == true &&
+			cTsPacket.keyDown[A] == true &&
+			cTsPacket.keyDown[S] == true &&
+			cTsPacket.keyDown[D] == true)
+		{
 			cTsPacket.keyDown[W] = false;
 			cTsPacket.keyDown[A] = false;
 			cTsPacket.keyDown[S] = false;
 			cTsPacket.keyDown[D] = false;
-		//}
+		}
 	}
 }
 

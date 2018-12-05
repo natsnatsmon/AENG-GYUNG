@@ -691,7 +691,7 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 						tempPlayers[i].gameState = GamePlayState;
 					}
 					restartP = 0;
-
+					itemIndex = 0;
 					game_startTime = GetTickCount();
 				}
 

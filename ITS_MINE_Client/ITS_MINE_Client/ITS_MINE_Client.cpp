@@ -216,12 +216,14 @@ void KeyDownInput(unsigned char key, int x, int y)
 {
 	if (info.gameState == MainState) {
 		int retval = 0;
+
 		retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
+
 		if (retval == SOCKET_ERROR)
 			err_quit("connect()");
 		else {
 			std::cout << "connect() 완료!\n";
-			recv(sock, (char*)&info.playerID, sizeof(int), 0);
+			recv(sock, (char*)&info.playerID, sizeof(short), 0);
 			printf("%d번 클라임", info.playerID);
 			// 만약 connect()가 성공했다면~(테스트)
 			SendToServer(sock);
@@ -244,6 +246,8 @@ void KeyDownInput(unsigned char key, int x, int y)
 	}
 	else if (key == 'd' || key == 'D')
 	{
+		if (info.gameState == WinState || info.gameState == LoseState)
+			exit(0);
 		cTsPacket.keyDown[D] = true;
 	}
 }
@@ -287,7 +291,7 @@ DWORD WINAPI ProccessClient(LPVOID arg) {
 
 	while (1)
 	{
-		if (info.gameState == GamePlayState || info.gameState == LobbyState) {
+		if (info.gameState != MainState) {
 			// 데이터 송신
 			SendToServer(sock);
 
@@ -309,7 +313,7 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(900, 800);
-	glutCreateWindow("Game Software Engineering KPU");
+	glutCreateWindow("IT'S MINE");
 
 	glewInit();
 	if (glewIsSupported("GL_VERSION_3_0"))

@@ -32,7 +32,6 @@ DWORD game_PrevTime = 0;
 DWORD server_PrevTime = 0; // server의 시간이란 의미로 s_를......... .... PrevTime 겹치길래.....ㅜ
 DWORD item_PrevTime = 0;
 DWORD send_PrevTime = 0;
-
 DWORD tempTime = 0;
 
 // 서버를 떠난 클라이언트ID
@@ -49,7 +48,6 @@ void err_display(const char *msg);
 int recvn(SOCKET s, char *buf, int len, int flags);
 
 void Init();
-void DeleteAll();
 
 int RecvFromClient(SOCKET client_sock, short PlayerID);
 void SendToClient();
@@ -62,9 +60,9 @@ void P_W_Collision();
 void B_W_CollisionAndUpdate(); // 총알 이동, 총알  벽 충돌처리.
 
 bool GameEndCheck();
+
 DWORD WINAPI RecvAndUpdateInfo(LPVOID arg);
 DWORD WINAPI UpdatePackAndSend(LPVOID arg);
-
 
 int main(int argc, char *argv[])
 {
@@ -148,10 +146,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-
-	// delete()
-	DeleteAll();
-
 	// closesocket()
 	closesocket(listen_sock);
 
@@ -209,25 +203,17 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 // 초기화 함수
 void Init() {
-	//game_startTime = 0;
-	//game_PrevTime = 0;
-	//server_PrevTime = 0;
-	//item_PrevTime = 0;
-	//send_PrevTime = 0;
-
-	//itemIndex = 0;
-
-	// 게임 정보 구조체 초기화
+	// info 구조체 초기화(시간)
 	info.gameTime = 0;
 
-	// 게임 정보 구조체 내의 플레이어 구조체 정보 및 임시플레이어 구조체 정보 초기화
+	// info 구조체 초기화(info내 플레이어 구조체 및 임시플레이어 구조체 정보)
 	for (int i = 0; i < MAX_PLAYERS; ++i) {
 
 		info.players[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE};
 		tempPlayers[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
 	}
 
-	// 게임 정보 구조체 내의 아이템 구조체 정보 및 임시아이템 구조체 정보 초기화
+	// info 구조체 초기화(info내 아이템 구조체 및 임시아이템 구조체 정보)
 	for (int i = 0; i < MAX_ITEMS; ++i) {
 		float randX = (float)(rand() % PLAY_WIDTH) - PLAY_X;
 		float randY = (float)(rand() % PLAY_WIDTH) - PLAY_Y;
@@ -268,12 +254,6 @@ void Init() {
 		printf("define된 s -> c 패킷의 크기가 다릅니다!\n");
 		printf("sTcPacket의 크기 : %zd\t SIZE_SToCPACKET의 크기 : %d\n", sizeof(sTcPacket), SIZE_SToCPACKET);
 	}
-
-
-	// 테스트 출력입니다.
-	//for (int i = 0; i < 10; ++i) {
-	//	printf("item[%d].x = %f, y = %f\n", i, sTcPacket.itemPos[i].x, sTcPacket.itemPos[i].y);
-	//}
 }
 
 void DeleteAll() {
@@ -314,15 +294,6 @@ int RecvFromClient(SOCKET client_sock, short PlayerID)
 	// 해당하는 클라이언트 패킷버퍼에 받은 데이터(buf)를 복사
 	memcpy(&cTsPacket[playerID], buf, SIZE_CToSPACKET);
 
-	// 받은 데이터 출력 (테스트)
-	//std::cout << std::endl
-	//	<< "w: " << cTsPacket[playerID]->keyDown[W] << " "
-	//	<< "a: " << cTsPacket[playerID]->keyDown[A] << " "
-	//	<< "s: " << cTsPacket[playerID]->keyDown[S] << " "
-	//	<< "d: " << cTsPacket[playerID]->keyDown[D] << std::endl
-	//	<< "[TCP 서버] " << playerID << "번 클라이언트에서 받음"
-	//	<< ", 포트 번호 = " << ntohs(clientAddr.sin_port) << " )"
-	//	<< std::endl;
 	return 0;
 }
 
@@ -362,24 +333,14 @@ void SendToClient()
 
 void UpdatePosition(short playerID) {
 
-	BOOL tempKeyDown[4] = {
-		cTsPacket[playerID].keyDown[W],
-		cTsPacket[playerID].keyDown[A],
-		cTsPacket[playerID].keyDown[S],
-		cTsPacket[playerID].keyDown[D]
-	};
+	short pID = playerID;
 
-	// 내 위치 계산 및 대입
-	// ★ elapsed time 계산
-	//if (game_PrevTime == 0)	// g_PrevTime은 0이고 currTime은 시작부터 시간을 재고 있기때문에 처음 elapsedTime을 구할 때 차이가 너무 많아 나버릴 수 있다.
-	//{
-	//	game_PrevTime = GetTickCount();
-	//	return;
-	//}
-	//DWORD currTime = GetTickCount();		// current time in millisec
-	//DWORD elapsedTime = currTime - game_PrevTime;
-	//game_PrevTime = currTime;
-	//float eTime = (float)elapsedTime / 1000.f;		// ms to s
+	//BOOL tempKeyDown[4] = {
+	//	cTsPacket[playerID].keyDown[W],
+	//	cTsPacket[playerID].keyDown[A],
+	//	cTsPacket[playerID].keyDown[S],
+	//	cTsPacket[playerID].keyDown[D]
+	//};
 	
 
 	// 아이템 1초마다 스폰시켜주는 부분
@@ -410,92 +371,22 @@ void UpdatePosition(short playerID) {
 	float Vel_x = 0.f, Vel_y = 0.f;
 
 
-	if (tempKeyDown[W])
+	if (cTsPacket[pID].keyDown[W])
 	{
-		//forceY += amount;
-		tempPlayers[playerID].pos.y = tempPlayers[playerID].pos.y + amount;
+		tempPlayers[pID].pos.y = tempPlayers[pID].pos.y + amount;
 	}
-	if (tempKeyDown[A])
+	if (cTsPacket[pID].keyDown[A])
 	{
-		//forceX -= amount;
-		tempPlayers[playerID].pos.x = tempPlayers[playerID].pos.x - amount;
+		tempPlayers[pID].pos.x = tempPlayers[pID].pos.x - amount;
 	}
-	if (tempKeyDown[S])
+	if (cTsPacket[pID].keyDown[S])
 	{
-		//forceY -= amount;
-		tempPlayers[playerID].pos.y = tempPlayers[playerID].pos.y - amount;
+		tempPlayers[pID].pos.y = tempPlayers[pID].pos.y - amount;
 	}
-	if (tempKeyDown[D])
+	if (cTsPacket[pID].keyDown[D])
 	{
-		//forceX += amount;
-		tempPlayers[playerID].pos.x = tempPlayers[playerID].pos.x + amount;
+		tempPlayers[pID].pos.x = tempPlayers[pID].pos.x + amount;
 	}
-
-	//// calc accel
-	//Accel_x = forceX / MASS;
-	//Accel_y = forceY / MASS;
-
-	//// calc vel
-	//Vel_x = Vel_x + Accel_x * eTime;
-	//Vel_y = Vel_y + Accel_y * eTime;
-
-	//// 0.f으로 set 해주지않으면 계속 빨라진다!
-	//Accel_x = 0.f;
-	//Accel_y = 0.f;
-
-	//// calc friction(마찰력) 계산
-	//// 정규화 과정 (벡터 방향을 그대로 두지만 크기가 1인 단위벡터로 바꾸는 과정)
-	//float magVel = sqrtf(Vel_x * Vel_x + Vel_y * Vel_y);
-	//float velX = Vel_x / magVel;
-	//float velY = Vel_y / magVel;
-
-	//// 마찰력이 작용하는 방향도 구함(힘의 반대방향이므로)
-	//float fricX = -velX;
-	//float fricY = -velY;
-
-	//// 마찰력의 크기
-	//float friction = COEF_FRICT * MASS * GRAVITY; // 마찰력 = 마찰계수 * m(질량) * g(중력)
-
-	//// 마찰력 방향 * 마찰력 크기
-	//fricX *= friction;
-	//fricY *= friction;
-
-	//if (magVel < FLT_EPSILON)
-	//{
-	//	Vel_x = 0.f;
-	//	Vel_y = 0.f;
-	//}
-	//else
-	//{
-	//	float accX = fricX / MASS;
-	//	float accY = fricY / MASS;
-
-	//	float afterVelX = Vel_x + accX * eTime;
-	//	float afterVelY = Vel_y + accY * eTime;
-
-	//	if (afterVelX * Vel_x < 0.f)
-	//		Vel_x = 0.f;
-	//	else
-	//		Vel_x = afterVelX;
-
-	//	if (afterVelY * Vel_y < 0.f)
-	//		Vel_y = 0.f;
-	//	else
-	//		Vel_y = afterVelY;
-	//}
-
-	////calc velocity
-	//Vel_x = Vel_x + Accel_x * eTime;
-	//Vel_y = Vel_y + Accel_y * eTime;
-
-	//// calc pos(최종 계산된 위치값을 갖고있음)
-	//tempPlayers[playerID].pos.x = tempPlayers[playerID].pos.x + Vel_x * eTime;
-	//tempPlayers[playerID].pos.y = tempPlayers[playerID].pos.y + Vel_y * eTime;
-
-	//std::cout << "tempPlayers 좌표 계산 후: "<< tempPlayers[playerID]->pos.x << ", " << tempPlayers[playerID]->pos.y << std::endl;
-
-	// 아이템 위치 계산 및 대입(종원)
-
 }
 
 // 종원
@@ -708,7 +599,6 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 	{
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
-			//Init();
 			tempPlayers[i].gameState = GamePlayState;
 			game_startTime = GetTickCount();
 		}
@@ -719,10 +609,8 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 	// 전용소켓
 	clientSocks[playerID] = (SOCKET)arg;
 
-	send(clientSocks[playerID], (char*)&playerID, sizeof(int), 0);
+	send(clientSocks[playerID], (char*)&playerID, sizeof(short), 0);
 
-	// 전용소켓을 갖는 전역변수 배열에 대입
-	//clientSocks[playerID] = client_sock;
 
 	while (1) {
 
@@ -731,8 +619,9 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		if (retval == SOCKET_ERROR)
 			break;
 
-		if (tempPlayers[playerID].gameState == GamePlayState)
+		switch (tempPlayers[playerID].gameState)
 		{
+		case GamePlayState:
 			// 받은 데이터를 이용해 계산
 			// 충돌로 인한 아이템 먹은 플레이어ID, 아이템 표시 여부 계산
 			P_I_CollisionCheck(playerID);	// ★ 종원
@@ -744,6 +633,21 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 			// 위에서 계산한 결과와 받은 데이터를 토대로 게임이 종료되었는지 체크
 			if (!GameEndCheck())	// 게임이 끝나지 않았으면 update해라 (★ 함수 내부: 하연)
 				UpdatePosition(playerID);
+			break;
+
+		case WinState:
+		case LoseState:
+			if (cTsPacket[playerID].keyDown[A])
+			{
+				tempPlayers[playerID].gameState = LobbyState;
+				break;
+			}
+			else if (cTsPacket[playerID].keyDown[D])
+			{
+				closesocket(clientSocks[playerID]);
+				clientSocks[playerID] = 0;
+				break;
+			}		
 		}
 
 
@@ -827,10 +731,6 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 			sTcPacket.isVisible[i] = info.items[i].isVisible;
 		}
 
-		if (leftID != -1)
-			sTcPacket.gameState = info.players[leftID].gameState;
-		else
-			sTcPacket.gameState = info.players[0].gameState;
 
 		// SendToClient() 작성
 		if (tempPlayers[0].gameState != LobbyState || tempPlayers[1].gameState != LobbyState)

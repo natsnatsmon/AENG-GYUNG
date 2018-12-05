@@ -29,9 +29,9 @@ SOCKET clientSocks[2];
 // 시간 저장 변수
 DWORD game_startTime = 0;
 DWORD game_PrevTime = 0;
-DWORD server_PrevTime = 0; // server의 시간이란 의미로 s_를......... .... PrevTime 겹치길래.....ㅜ
 DWORD item_PrevTime = 0;
-DWORD send_PrevTime = 0;
+//DWORD server_PrevTime = 0; // server의 시간이란 의미로 s_를......... .... PrevTime 겹치길래.....ㅜ
+//DWORD send_PrevTime = 0;
 DWORD tempTime = 0;
 
 // 서버를 떠난 클라이언트ID
@@ -40,6 +40,8 @@ short leaveID = -1;
 short leftID = -1;
 
 int itemIndex = 0;
+
+short restartP = 0;
 
 //CRITICAL_SECTION cs;
 
@@ -209,7 +211,7 @@ void Init() {
 	// info 구조체 초기화(info내 플레이어 구조체 및 임시플레이어 구조체 정보)
 	for (int i = 0; i < MAX_PLAYERS; ++i) {
 
-		info.players[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE};
+		info.players[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
 		tempPlayers[i] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
 	}
 
@@ -220,13 +222,13 @@ void Init() {
 
 		info.items[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
 
-		tempItems[i] = info.items[i];
+		tempItems[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
 	}
 
 	// C -> S Packet 구조체 초기화
 	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
-		cTsPacket[i] = { {false, false, false, false}, INIT_LIFE };
+		cTsPacket[i] = { {false, false, false, false} };
 	}
 
 	// S -> C Packet 구조체 초기화
@@ -293,6 +295,12 @@ int RecvFromClient(SOCKET client_sock, short PlayerID)
 
 	// 해당하는 클라이언트 패킷버퍼에 받은 데이터(buf)를 복사
 	memcpy(&cTsPacket[playerID], buf, SIZE_CToSPACKET);
+
+	//printf("[%d 클라 패킷 좌표] W: %d, A: %d, S: %d, D: %d \n", playerID,
+	//	cTsPacket[playerID].keyDown[W],
+	//	cTsPacket[playerID].keyDown[A],
+	//	cTsPacket[playerID].keyDown[S],
+	//	cTsPacket[playerID].keyDown[D]);
 
 	return 0;
 }
@@ -540,7 +548,7 @@ bool GameEndCheck()
 	for (int i = 0; i < MAX_PLAYERS; i++) {
 		if (tempPlayers[i].life == 0) {
 			tempPlayers[i].gameState = LoseState;	// ★ 여기 한 명이라도 목숨 0인게 걸리면 그 플레이어는 게임오버패배 스테이트, 다른 플레이어는 게임오버승리 스테이트로 수정해야겠어요!
-			
+
 			for (int j = 0; j < MAX_PLAYERS; j++)
 			{
 				if (j != i)
@@ -604,8 +612,8 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
 			tempPlayers[i].gameState = GamePlayState;
-			game_startTime = GetTickCount();
 		}
+		game_startTime = GetTickCount();
 	}
 
 	printf("[TCP 서버] 클라이언트 %d 접속\n", playerID);
@@ -613,8 +621,8 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 	// 전용소켓
 	clientSocks[playerID] = (SOCKET)arg;
 
+	// 클라에게 몇번 플레이어인지 데이터 전송
 	send(clientSocks[playerID], (char*)&playerID, sizeof(short), 0);
-
 
 	while (1) {
 
@@ -641,17 +649,66 @@ DWORD WINAPI RecvAndUpdateInfo(LPVOID arg)
 
 		case WinState:
 		case LoseState:
-			if (cTsPacket[playerID].keyDown[A])
+			// 재시작 선택
+			if (cTsPacket[playerID].keyDown[W] && cTsPacket[playerID].keyDown[A] &&
+				cTsPacket[playerID].keyDown[S] && cTsPacket[playerID].keyDown[D])
 			{
-				tempPlayers[playerID].gameState = LobbyState;
+				restartP++;
+
+				//info.players[playerID] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
+				tempPlayers[playerID] = { LobbyState, {INIT_POS, INIT_POS}, {false, false, false, false}, INIT_LIFE };
+				cTsPacket[playerID] = { {false, false, false, false} };
+
+
+				// info 구조체 초기화(info내 아이템 구조체 및 임시아이템 구조체 정보)
+				for (int i = 0; i < MAX_ITEMS; ++i) {
+					float randX = (float)(rand() % PLAY_WIDTH) - PLAY_X;
+					float randY = (float)(rand() % PLAY_WIDTH) - PLAY_Y;
+
+					//info.items[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
+
+					tempItems[i] = { {randX, randY}, {0.f, 0.f}, 0.f, nullPlayer, false };
+				}
+
+				sTcPacket.time = 0;
+
+				sTcPacket.p1Pos = { INIT_POS, INIT_POS };
+				sTcPacket.p2Pos = { INIT_POS, INIT_POS };
+
+				sTcPacket.life = INIT_LIFE;
+
+				for (int i = 0; i < MAX_ITEMS; i++) {
+					sTcPacket.itemPos[i] = info.items[i].pos;
+					sTcPacket.playerID[i] = nullPlayer;
+					sTcPacket.isVisible[i] = false;
+				}
+
+				// 시간 갱신
+				tempTime = 0;
+
+				if (restartP == MAX_PLAYERS)
+				{
+					game_PrevTime = 0;
+					item_PrevTime = 0;
+					for (int i = 0; i < MAX_PLAYERS; i++)
+					{
+						tempPlayers[i].gameState = GamePlayState;
+					}
+					restartP = 0;
+					itemIndex = 0;
+					game_startTime = GetTickCount();
+				}
+
 				break;
 			}
-			else if (cTsPacket[playerID].keyDown[D])
+			// 게임 종료 선택
+			else if (cTsPacket[playerID].keyDown[W] && cTsPacket[playerID].keyDown[S] &&
+				cTsPacket[playerID].keyDown[D] && !cTsPacket[playerID].keyDown[A])
 			{
 				closesocket(clientSocks[playerID]);
 				clientSocks[playerID] = 0;
 				break;
-			}		
+			}
 		}
 
 
@@ -714,8 +771,6 @@ DWORD WINAPI UpdatePackAndSend(LPVOID arg)
 {
 	// ★ 생성 시 출력(테스트용)
 	printf("UpdatePackAndSend 생성 (이전 CalculateThread)\n");
-
-	int retval;
 
 	while (1)
 	{

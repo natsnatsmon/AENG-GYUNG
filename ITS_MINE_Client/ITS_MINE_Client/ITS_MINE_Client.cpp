@@ -7,6 +7,7 @@ it under the terms of the What The Hell License. Do it plz.
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY.
 */
+
 //#pragma comment(lib,"winmm.lib")
 #define _CRT_SECURE_NO_WARNINGS
 #pragma comment(lib, "ws2_32")
@@ -34,6 +35,9 @@ SOCKET sock;
 
 // connect()
 SOCKADDR_IN serveraddr;
+char* serverIP;
+
+bool firstConnect;
 
 ScnMgr *g_ScnMgr = NULL;
 DWORD g_PrevTime = 0;
@@ -73,6 +77,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// 구조체 초기화
 	Init();
 
+	if (firstConnect) {
+		// 대화상자 생성
+		DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, (DLGPROC)DlgProc);
+	}
+
 	// Initialize GL things
 	glutInit(&__argc, __argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
@@ -101,10 +110,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// 소켓 통신 스레드 생성
 	CreateThread(NULL, 0, ProcessClient, NULL, 0, NULL);
 
-	// 대화상자 생성
-	DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, (DLGPROC)DlgProc);
-
-
 	g_ScnMgr = new ScnMgr();
 
 	glutMainLoop();		//메인 루프 함수
@@ -120,6 +125,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 // 대화상자 프로시저
 BOOL CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	DWORD address = 0;
+	DWORD dwAddress = 0;
+
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		hIpControl = GetDlgItem(hDlg, IDC_IPADDRESS1);
@@ -131,12 +139,20 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		switch (LOWORD(wParam)) {
 		case IDOK:
 			//ip 주소 컨트롤에서 값을 가져오는 방법을 보자!
-			DWORD address;
 
 			// hDlg다이어로그 핸들에서 IDC_IPADDRESS ip주소 컨트롤의 핸들을 첫번째 파라미터에 넣고, 
 			// 값을 가져 오겠다는 매크로 IPM_GETADDRESS를 넣는다.
 			// 마지막 파라미터는 그 읽어온 주소값을 DWORD에 넣는데 그 주소를 넘긴다.
 			SendMessage(GetDlgItem(hDlg, IDC_IPADDRESS1), IPM_GETADDRESS, 0, (LPARAM)&address);
+
+			// 네트워크 순서로 정렬된 값을 호스트 순서로 변환
+			dwAddress = ntohl(address);
+
+			// 입력받은 32비트 IP 주소를 문자열로 변환
+			serverIP = inet_ntoa(*(IN_ADDR*)&dwAddress);
+			printf("%s", serverIP);
+
+			firstConnect = false;
 			EndDialog(hDlg, IDOK);
 			return TRUE;
 
@@ -163,7 +179,8 @@ DWORD WINAPI ProcessClient(LPVOID arg) {
 	// connect()
 	ZeroMemory(&serveraddr, sizeof(serveraddr));
 	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
+	serveraddr.sin_addr.s_addr = inet_addr(serverIP);
+	//serveraddr.sin_addr.s_addr = inet_addr(strIP);
 	serveraddr.sin_port = htons(SERVERPORT);
 
 	while (1)
@@ -227,6 +244,10 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 // 구조체 초기화 함수
 void Init() {
+	serverIP = 0;
+
+	firstConnect = true;
+
 	// 게임 정보 구조체 초기화
 	info.gameState = MainState;
 	info.gameTime = 0;

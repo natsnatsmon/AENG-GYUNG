@@ -2,7 +2,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <Windows.h>
-#define SERVERIP   "127.0.0.1"		 // 루프백(개인 작업 시)
+//#define SERVERIP   "127.0.0.1"		 // 루프백(개인 작업 시)
 //#define SERVERIP   "59.16.87.178"      // 김정현 서버 시
 //#define SERVERIP   "182.210.213.139"   // 박하연 서버 시
 //#define SERVERIP "10.30.1.3"			 // 강의실 박하연 서버 시

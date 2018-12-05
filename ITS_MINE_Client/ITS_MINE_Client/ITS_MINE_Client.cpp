@@ -8,7 +8,6 @@ This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY.
 */
 //#pragma comment(lib,"winmm.lib")
-#define _CRT_SECURE_NO_WARNINGS
 #pragma comment(lib, "ws2_32")
 #include <winsock2.h>
 #include "stdafx.h"
@@ -32,6 +31,7 @@ SOCKET sock;
 
 // connect()
 SOCKADDR_IN serveraddr;
+char* serverIP;
 
 ScnMgr *g_ScnMgr = NULL;
 DWORD g_PrevTime = 0;
@@ -45,6 +45,8 @@ CInfo info;
 // 패킷 구조체 선언
 CtoSPacket cTsPacket;
 StoCPacket sTcPacket;
+
+HANDLE h_connectEvt;
 
 // 소켓 함수 오류 출력 후 종료
 void err_quit(const char *msg)
@@ -93,7 +95,14 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 
 // 구조체 초기화 함수
 void Init() {
+	printf("서버의 IP주소를 입력해주세요. (ex 111.111.111.111)\n");
+	serverIP = (char*)malloc(20);
+	scanf("%s", serverIP);
+	printf("%s", serverIP);
+	SetEvent(h_connectEvt);
+
 	// 게임 정보 구조체 초기화
+	info.playerID = -1;
 	info.gameState = MainState;
 	info.gameTime = 0;
 	info.life = INIT_LIFE;
@@ -307,6 +316,7 @@ void KeyUpInput(unsigned char key, int x, int y)
 }
 
 DWORD WINAPI ProccessClient(LPVOID arg) {
+	WaitForSingleObject(h_connectEvt, INFINITE);
 	printf("클라이언트 통신 스레드 생성\n");
 
 	// 윈속 초기화
@@ -320,7 +330,9 @@ DWORD WINAPI ProccessClient(LPVOID arg) {
 	// connect()
 	ZeroMemory(&serveraddr, sizeof(serveraddr));
 	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
+//	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
+
+	serveraddr.sin_addr.s_addr = inet_addr(serverIP);
 	serveraddr.sin_port = htons(SERVERPORT);
 
 	while (1)
@@ -339,6 +351,8 @@ DWORD WINAPI ProccessClient(LPVOID arg) {
 
 int main(int argc, char **argv)
 {
+	h_connectEvt = CreateEvent(NULL, FALSE, FALSE, NULL);	// 비신호 상태(바로 시작o)
+
 	// 구조체 초기화
 	Init();
 

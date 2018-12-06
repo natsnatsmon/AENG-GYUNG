@@ -10,7 +10,7 @@ but WITHOUT ANY WARRANTY.
 
 //#pragma comment(lib,"winmm.lib")
 #define _CRT_SECURE_NO_WARNINGS
-#pragma comment(lib, "ws2_32")
+#pragma comment(lib, "ws2_32.lib")
 #include <winsock2.h>
 #include "stdafx.h"
 #include <iostream>

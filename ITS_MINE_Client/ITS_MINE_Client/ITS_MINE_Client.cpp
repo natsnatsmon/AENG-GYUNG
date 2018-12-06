@@ -262,11 +262,6 @@ void KeyDownInput(unsigned char key, int x, int y)
 	{
 		if (info.gameState == WinState || info.gameState == LoseState || info.gameState == drawState)
 		{
-			cTsPacket.keyDown[W] = true;
-			cTsPacket.keyDown[A] = false;
-			cTsPacket.keyDown[S] = true;
-			cTsPacket.keyDown[D] = true;
-
 			exit(0);
 		}
 	}

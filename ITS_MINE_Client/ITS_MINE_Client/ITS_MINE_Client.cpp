@@ -42,8 +42,6 @@ HANDLE hConnectEvt;
 ScnMgr *g_ScnMgr = NULL;
 DWORD g_PrevTime = 0;
 
-int g_Shoot = SHOOT_NONE;
-
 // 구조체들 선언
 CInfo info;
 //CItemObj *item[MAX_ITEMS];

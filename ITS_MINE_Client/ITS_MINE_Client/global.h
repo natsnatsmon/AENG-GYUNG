@@ -10,15 +10,6 @@
 
 #define MAX_OBJECTS	100
 
-#define SHOOT_NONE	-1
-#define SHOOT_LEFT	1
-#define SHOOT_RIGHT	2
-#define SHOOT_UP	3
-#define SHOOT_DOWN	4
-
-#define KIND_HERO	0
-#define KIND_BULLET	1
-
 #define MAX_PLAYERS 2
 #define MAX_ITEMS 100
 #define MAX_POS 720

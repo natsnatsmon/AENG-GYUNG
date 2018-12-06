@@ -37,7 +37,7 @@ SOCKET sock;
 SOCKADDR_IN serveraddr;
 char* serverIP;
 
-HANDLE h_connectEvt;
+HANDLE hConnectEvt;
 
 ScnMgr *g_ScnMgr = NULL;
 DWORD g_PrevTime = 0;
@@ -76,7 +76,7 @@ void KeyUpInput(unsigned char key, int x, int y);
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	// 구조체 초기화
 	Init();
-	h_connectEvt = CreateEvent(NULL, FALSE, FALSE, NULL);
+	hConnectEvt = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 	// 대화상자 생성
 	DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, (DLGPROC)DlgProc);
@@ -85,9 +85,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// Initialize GL things
 	glutInit(&__argc, __argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowPosition(100, 100);
+	glutInitWindowPosition(200, 200);
 	glutInitWindowSize(900, 800);
-	glutCreateWindow("Game Software Engineering KPU");
+	glutCreateWindow("IT'S MINE !");
 
 	glewInit();
 	if (glewIsSupported("GL_VERSION_3_0"))
@@ -167,6 +167,10 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 			return TRUE;
 
 		case IDCANCEL:
+
+			MessageBox(NULL, "IP를 입력하지 않으면 게임을 진행할 수 없습니다!", "IT'S MINE !", MB_OK);
+			exit(1);
+
 			EndDialog(hDlg, IDCANCEL);
 			return TRUE;
 		}
@@ -176,7 +180,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 }
 
 DWORD WINAPI ProcessClient(LPVOID arg) {
-	WaitForSingleObject(h_connectEvt, INFINITE);
+	WaitForSingleObject(hConnectEvt, INFINITE);
 	printf("클라이언트 통신 스레드 생성\n");
 	   
 	while (1)
@@ -379,7 +383,7 @@ void KeyDownInput(unsigned char key, int x, int y)
 			SendToServer(sock);
 
 			info.gameState = LobbyState;
-			SetEvent(h_connectEvt);
+			SetEvent(hConnectEvt);
 		}
 	}
 

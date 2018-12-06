@@ -27,26 +27,16 @@ but WITHOUT ANY WARRANTY.
 
 using namespace std;
 
-// 윈속 초기화에 쓰일 변수
 WSADATA wsa;
-
-// socket()
 SOCKET sock;
-
-// connect()
 SOCKADDR_IN serveraddr;
 char* serverIP;
-
 HANDLE hConnectEvt;
 
 ScnMgr *g_ScnMgr = NULL;
 DWORD g_PrevTime = 0;
 
-// 구조체들 선언
 CInfo info;
-//CItemObj *item[MAX_ITEMS];
-
-// 패킷 구조체 선언
 CtoSPacket cTsPacket;
 StoCPacket sTcPacket;
 
@@ -72,7 +62,6 @@ void KeyUpInput(unsigned char key, int x, int y);
 
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-	// 구조체 초기화
 	Init();
 	hConnectEvt = CreateEvent(NULL, FALSE, FALSE, NULL);
 
@@ -110,18 +99,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	g_ScnMgr = new ScnMgr();
 
-	glutMainLoop();		//메인 루프 함수
+	glutMainLoop();
 
 	delete g_ScnMgr;
 
-	// closesocket()
 	closesocket(sock);
 
 	WSACleanup();
 	return 0;
 }
 
-// 대화상자 프로시저
 BOOL CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	DWORD address = 0;
 	DWORD dwAddress = 0;
@@ -130,21 +117,16 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	case WM_INITDIALOG:
 		hIpControl = GetDlgItem(hDlg, IDC_IPADDRESS1);
 		hSendButton = GetDlgItem(hDlg, IDOK);
-		//SendMessage(hEdit1, EM_SETLIMITTEXT, BUFSIZE, 0);
 		return TRUE;
 
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {
 		case IDOK:
-			//ip 주소 컨트롤에서 값을 가져오는 방법을 보자!
-
-			// hDlg다이어로그 핸들에서 IDC_IPADDRESS ip주소 컨트롤의 핸들을 첫번째 파라미터에 넣고, 
-			// 값을 가져 오겠다는 매크로 IPM_GETADDRESS를 넣는다.
-			// 마지막 파라미터는 그 읽어온 주소값을 DWORD에 넣는데 그 주소를 넘긴다.
+			// IPM_GETADDRESS = 값을 가져오겠다는 매크로
 			SendMessage(GetDlgItem(hDlg, IDC_IPADDRESS1), IPM_GETADDRESS, 0, (LPARAM)&address);
 
-			// 네트워크 순서로 정렬된 값을 호스트 순서로 변환
-			dwAddress = ntohl(address);
+			// 호스트 바이트 정렬 -> 네트워크 바이트 정렬
+			dwAddress = htonl(address);
 
 			// 입력받은 32비트 IP 주소를 문자열로 변환
 			serverIP = inet_ntoa(*(IN_ADDR*)&dwAddress);
@@ -184,10 +166,7 @@ DWORD WINAPI ProcessClient(LPVOID arg) {
 	while (1)
 	{
 		if (info.gameState != MainState) {
-			// 데이터 송신
 			SendToServer(sock);
-
-			// 데이터 수신
 			RecvFromServer(sock);
 		}
 	}
@@ -195,7 +174,6 @@ DWORD WINAPI ProcessClient(LPVOID arg) {
 	return 0;
 }
 
-// 소켓 함수 오류 출력 후 종료
 void err_quit(const char *msg)
 {
 	LPVOID lpMsgBuf;
@@ -209,7 +187,6 @@ void err_quit(const char *msg)
 	exit(1);
 }
 
-// 소켓 함수 오류 출력
 void err_display(const char *msg)
 {
 	LPVOID lpMsgBuf;
@@ -240,7 +217,6 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 	return (len - left);
 }
 
-// 구조체 초기화 함수
 void Init() {
 	printf("Init()\n");
 	serverIP = 0;
@@ -257,7 +233,7 @@ void Init() {
 		info.items[i].playerID = nullPlayer;
 	}
 
-	// C -> S Packet 구조체 초기화
+	// C <-> S Packet 구조체 초기화
 	cTsPacket = { {false, false, false, false} };
 
 	sTcPacket.gameState = LobbyState;
@@ -292,7 +268,6 @@ void RecvFromServer(SOCKET s) {
 	char buf[SIZE_SToCPACKET + 1];
 	ZeroMemory(buf, SIZE_SToCPACKET);
 
-	// 데이터 받기
 	retVal = recvn(s, buf, SIZE_SToCPACKET, 0);
 	if (retVal == SOCKET_ERROR) {
 		err_display("recv()");
@@ -318,8 +293,6 @@ void RecvFromServer(SOCKET s) {
 }
 
 void SendToServer(SOCKET s) {
-	//std::cout << "SendToServer() 호출" << std::endl;
-
 	int retVal;
 	// 데이터 통신에 사용할 변수
 	char buf[SIZE_CToSPACKET];
@@ -342,7 +315,7 @@ void RenderScene(void)
 		g_PrevTime = GetTickCount();
 		return;
 	}
-	DWORD CurrTime = GetTickCount();//밀리세컨드
+	DWORD CurrTime = GetTickCount(); // ms
 	DWORD ElapsedTime = CurrTime - g_PrevTime;
 	g_PrevTime = CurrTime;
 	float eTime = (float)ElapsedTime / 1000.0f;
@@ -377,7 +350,7 @@ void KeyDownInput(unsigned char key, int x, int y)
 			std::cout << "connect() 완료!\n";
 			recv(sock, (char*)&info.playerID, sizeof(short), 0);
 			printf("%d번 클라임", info.playerID);
-			// 만약 connect()가 성공했다면~(테스트)
+
 			SendToServer(sock);
 
 			info.gameState = LobbyState;

@@ -15,10 +15,10 @@
 #define MAX_POS 720
 #define MIN_POS 80
 
-#define R_PLAYER 40.f // 플레이어 반지름
-#define R_ITEM 20.f // 아이템 반지름
+#define SIZE_PLAYER 80.f
+#define SIZE_ITEM 40.f
 
-#define INIT_POS -100.f
+#define INIT_POS 0.f
 #define INIT_LIFE 5
 #define GAMEOVER_TIME 100
 
@@ -27,13 +27,10 @@
 #define S 2
 #define D 3
 
-
-//★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
 enum gameState {
 	MainState, LobbyState, GamePlayState, WinState, LoseState, drawState
 };
 
-//★ 플레이어
 enum player {
 	player1, player2, nullPlayer = 99
 };
@@ -50,8 +47,8 @@ struct CtoSPacket {
 };
 #pragma pack()
 
-#pragma pack(1)
 // Server -> Client
+#pragma pack(1)
 struct StoCPacket {
 	short gameState;
 	DWORD time;
@@ -61,7 +58,7 @@ struct StoCPacket {
 	
 	short life;
 
-	Vec itemPos[MAX_ITEMS]; // ★ 논의 필요
+	Vec itemPos[MAX_ITEMS];
 	short playerID[MAX_ITEMS];
 	bool isVisible[MAX_ITEMS];
 };
@@ -69,21 +66,21 @@ struct StoCPacket {
 
 // 아이템 구조체
 struct CItemObj {
-	Vec pos;   // 아이템 위치 
-	bool isVisible;  // 화면 표시 여부
+	Vec pos;
+	bool isVisible;
 
-	short playerID;	// 아이템을 먹은 플레이어ID
+	short playerID;
 };
 
 // 게임 정보 구조체
 typedef struct CInfo {
-	short playerID;	//playerID
+	short playerID;	
 	
-	short gameState;  // 게임 상태를 나타내는 변수 
-	DWORD gameTime;  // 게임 시간 
+	short gameState;
+	DWORD gameTime;
 
-	short life;		// 플레이어 생명
+	short life;
 
 	Vec playersPos[MAX_PLAYERS];
-	CItemObj items[MAX_ITEMS];  // 아이템 구조체
+	CItemObj items[MAX_ITEMS];
 }; 

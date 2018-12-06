@@ -37,14 +37,12 @@
 #define PLAYER_SIZE 80.f
 #define ITEM_SIZE 40.f
 
-//★ 게임 오버 스테이트를 두개로 나눌지 논의 필요
 enum gameState {
 	LobbyState = 1, GamePlayState, WinState, LoseState, drawState
 };
 
-//★ 플레이어 수는 임시로 4까지 해놓음. 끝날때까지도 2명만 쓰면 define으로 바꿈
 enum player {
-	player1, player2, player3, player4, nullPlayer = 99
+	player1, player2, nullPlayer = 99
 };
 
 // 좌표를 위한 벡터 구조체 

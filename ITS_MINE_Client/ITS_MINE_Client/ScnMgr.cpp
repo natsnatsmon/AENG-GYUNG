@@ -6,8 +6,6 @@
 #include <string.h>
 #include <iostream>
 
-int g_Seq = 0;
-
 ScnMgr::ScnMgr()
 {
 	m_Renderer = NULL;
@@ -56,6 +54,7 @@ ScnMgr::~ScnMgr()
 	}
 }
 
+// ITS_MINE_Client.cpp에서 가져오는 구조체들
 extern CInfo info;
 extern StoCPacket *sTcPacket;
 extern CtoSPacket *cTsPacket;
@@ -80,28 +79,18 @@ void ScnMgr::RenderScene()
 		m_Renderer->DrawTextureRectSeqXY(0, 0, 0, 900, 800, 1, 1, 1, 1, m_PlayUITex, 1, 1, 1, 1);
 
 		// 시간 그리기
-		// Time API 추가해야함
 		TimeRenderer();
 
 		// 생명 그리기
 		for (int i = 0; i < info.life; ++i) {
-			m_Renderer->DrawTextureRect(390.f, -340.f + (60.f * i), 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_LifeTex);
+			m_Renderer->DrawTextureRect(390.f, -340.f + (60.f * i), 1.f, SIZE_ITEM,  SIZE_ITEM, 1, 1, 1, 1, m_LifeTex);
 		}
 
 		// 플레이어 캐릭터, 상대 캐릭터 그리기
-		int seqX, seqY;
-		seqX = g_Seq % 8;
-		seqY = (int)(g_Seq / 4);
-
-		g_Seq++;
-		if (g_Seq > 32)
-			g_Seq = 0;
-
-
 		for (int i = 0; i < MAX_PLAYERS; ++i) {
-			m_Renderer->DrawTextureRectSeqXY(info.playersPos[i].x, info.playersPos[i].y, 1.f, R_PLAYER * 2, R_PLAYER * 2, 1, 1, 1, 1, m_PlayerTex[i], seqX, seqY, 8, 4);
+			m_Renderer->DrawTextureRectHeight(info.playersPos[i].x, info.playersPos[i].y, 1.f, SIZE_PLAYER, SIZE_PLAYER, 1, 1, 1, 1, m_PlayerTex[i], 0.f);
 			if (i == info.playerID) {
-				m_Renderer->DrawTextureRect(info.playersPos[i].x, info.playersPos[i].y + 50.f, 1.f, 20.f, 20.f, 1, 1, 1, 1, m_ArrowTex);
+				m_Renderer->DrawTextureRect(info.playersPos[i].x, info.playersPos[i].y + 75.f, 1.f, 20.f, 20.f, 1, 1, 1, 1, m_ArrowTex);
 			}
 		}
 
@@ -115,15 +104,15 @@ void ScnMgr::RenderScene()
 
 				switch (info.items[i].playerID) {
 				case nullPlayer: // 사과
-					m_Renderer->DrawTextureRect(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_ItemTex);
+					m_Renderer->DrawTextureRect(itemPosX, itemPosY, 1.f, SIZE_ITEM, SIZE_ITEM, 1, 1, 1, 1, m_ItemTex);
 					break;
 
 				case player1:
-					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player1], 1, 1, 1, 1);
+					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, SIZE_ITEM, SIZE_ITEM, 1, 1, 1, 1, m_BulletTex[player1], 1, 1, 1, 1);
 					break;
 
 				case player2:
-					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, R_ITEM * 2, R_ITEM * 2, 1, 1, 1, 1, m_BulletTex[player2], 1, 1, 1, 1);
+					m_Renderer->DrawTextureRectSeqXY(itemPosX, itemPosY, 1.f, SIZE_ITEM, SIZE_ITEM, 1, 1, 1, 1, m_BulletTex[player2], 1, 1, 1, 1);
 					break;
 
 				default:
@@ -153,11 +142,10 @@ void ScnMgr::RenderScene()
 }
 
 void ScnMgr::TimeRenderer() {
-	// 현재 시간을 1000으로 나눠서.. 몇초인지 세고..
+	// 현재 시간 / 1000 -> ms to s
 	unsigned int time = (unsigned int)(info.gameTime) / 1000;
 	unsigned int leaveTime = GAMEOVER_TIME - time;
 
-	// 그걸 다시 10으로도 나눠서..
 	unsigned int sec = leaveTime % 10;
 	unsigned int tenSec = 0;
 
@@ -165,6 +153,7 @@ void ScnMgr::TimeRenderer() {
 		tenSec = leaveTime / 10;
 	}
 
+	// 100의자리, 10의 자리, 1의자리 각각 다른 위치에 렌더링
 	if (leaveTime == 100) {
 		m_Renderer->DrawTextureRect(363.f, 320.f, 1.f, 30.f, 50.f, 1, 1, 1, 1, m_TimeTex[1]);
 		m_Renderer->DrawTextureRect(385.f, 320.f, 1.f, 30.f, 50.f, 1, 1, 1, 1, m_TimeTex[0]);
